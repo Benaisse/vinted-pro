@@ -6,22 +6,33 @@ import { ShoppingCart, Home, Box, BarChart2, Settings, AlertTriangle, Menu as Me
 import { Button } from "@/components/ui/button";
 import clsx from "clsx";
 import { ThemeToggle } from "@/components/ui/ThemeToggle";
-
-const menu = [
-  { label: "Tableau de bord", icon: <Home className="w-5 h-5" />, href: "/" },
-  { label: "Ventes", icon: <ShoppingCart className="w-5 h-5" />, href: "/ventes", badge: "12" },
-  { label: "Inventaire", icon: <Box className="w-5 h-5" />, href: "/inventaire" },
-  { label: "Stock", icon: <AlertTriangle className="w-5 h-5" />, href: "/stock", badge: "3", badgeColor: "red" },
-  { label: "Analytics", icon: <BarChart2 className="w-5 h-5" />, href: "/analytics" },
-  { label: "Abonnement", icon: <Crown className="w-5 h-5" />, href: "/abonnement" },
-  { label: "Paramètres", icon: <Settings className="w-5 h-5" />, href: "/parametres" },
-];
+import { useData } from "@/contexts/DataContext";
 
 export function Sidebar() {
   const pathname = usePathname();
   const [collapsed, setCollapsed] = useState(false);
   const [mobileOpen, setMobileOpen] = useState(false);
   const drawerRef = useRef<HTMLDivElement>(null);
+  const { stats } = useData();
+
+  const menu = [
+    { label: "Tableau de bord", icon: <Home className="w-5 h-5" />, href: "/" },
+    { label: "Ventes", icon: <ShoppingCart className="w-5 h-5" />, href: "/ventes", badge: stats.totalVentes.toString() },
+    { label: "Inventaire", icon: <Box className="w-5 h-5" />, href: "/inventaire" },
+    { label: "Stock", icon: <AlertTriangle className="w-5 h-5" />, href: "/stock", badge: (stats.stockFaible + stats.stockRupture).toString(), badgeColor: "red" },
+    { label: "Analytics", icon: <BarChart2 className="w-5 h-5" />, href: "/analytics" },
+    { label: "Abonnement", icon: <Crown className="w-5 h-5" />, href: "/abonnement" },
+    { label: "Paramètres", icon: <Settings className="w-5 h-5" />, href: "/parametres" },
+  ];
+
+  // Fermer le menu mobile après navigation
+
+export function Sidebar() {
+  const pathname = usePathname();
+  const [collapsed, setCollapsed] = useState(false);
+  const [mobileOpen, setMobileOpen] = useState(false);
+  const drawerRef = useRef<HTMLDivElement>(null);
+  const { stats } = useData();
 
   // Fermer le menu mobile après navigation
   useEffect(() => {

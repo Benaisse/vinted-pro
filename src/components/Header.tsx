@@ -28,6 +28,7 @@ import {
 import { useState, useRef } from "react";
 import { ArticleFormModal } from "@/components/ArticleFormModal";
 import { useRouter } from "next/navigation";
+import { useData } from "@/contexts/DataContext";
 
 export function Header() {
   const [search, setSearch] = useState("");
@@ -37,10 +38,12 @@ export function Header() {
   const [online, setOnline] = useState(true);
   const [modalOpen, setModalOpen] = useState(false);
   const router = useRouter();
+  const { addArticle, stats } = useData();
 
-  // Mock: onSubmit ajoute juste un log (à remplacer par la logique réelle d'ajout d'article)
+  // Utiliser la vraie fonction d'ajout d'article du contexte
   const handleAddArticle = (article: any) => {
-    console.log("Article ajouté:", article);
+    addArticle(article);
+    console.log("Article ajouté avec succès:", article);
   };
 
   return (
@@ -76,7 +79,7 @@ export function Header() {
           </div>
           <span className="hidden sm:inline mx-1 text-gray-300">|</span>
           <div className="text-xs text-gray-700 flex items-center gap-1">
-            <span className="font-bold text-green-600 animate-bounce-slow">+12</span>
+            <span className="font-bold text-green-600 animate-bounce-slow">+{stats.totalVentes}</span>
             <span className="hidden sm:inline">ventes aujourd'hui</span>
           </div>
         </div>
@@ -329,15 +332,15 @@ export function Header() {
             <div className="p-3 border-b bg-gray-50">
               <div className="grid grid-cols-3 gap-3 text-center">
                 <div>
-                  <p className="text-lg font-bold text-green-600">342</p>
+                  <p className="text-lg font-bold text-green-600">{stats.totalVentes}</p>
                   <p className="text-xs text-gray-500">Ventes</p>
                 </div>
                 <div>
-                  <p className="text-lg font-bold text-blue-600">25.8k€</p>
+                  <p className="text-lg font-bold text-blue-600">{stats.totalRevenus.toLocaleString()}€</p>
                   <p className="text-xs text-gray-500">Revenus</p>
                 </div>
                 <div>
-                  <p className="text-lg font-bold text-purple-600">156</p>
+                  <p className="text-lg font-bold text-purple-600">{stats.totalArticles}</p>
                   <p className="text-xs text-gray-500">Articles</p>
                 </div>
               </div>
