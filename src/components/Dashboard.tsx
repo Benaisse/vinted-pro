@@ -1,7 +1,7 @@
 'use client'
 
 import { Button } from "@/components/ui/button";
-import { BarChart2, Calendar, ChevronDown } from "lucide-react";
+import { BarChart2, Calendar, ChevronDown, ArrowUpRight, ArrowDownRight, AlertTriangle, Star } from "lucide-react";
 import {
   AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, BarChart, Bar, Cell, Legend
 } from "recharts";
@@ -45,6 +45,15 @@ function CustomTooltip({ active, payload, label }: any) {
 }
 
 export function Dashboard() {
+  const totalRevenuNet = financialData.reduce((sum, d) => sum + d.marge, 0);
+  // Exemples de tendances (mock)
+  const tendanceCA = 12.5;
+  const tendanceRevenu = 8.2;
+  const tendanceVentes = -3.1;
+  const tendanceMarge = 2.7;
+  // Résumé rapide (mock)
+  const topVente = topSalesData[0];
+  const stockCritique = 3;
   return (
     <div className="flex flex-col gap-6 p-8">
       {/* Titre */}
@@ -52,7 +61,17 @@ export function Dashboard() {
         <h1 className="text-2xl font-bold text-gray-900 mb-1">Tableau de bord</h1>
         <p className="text-gray-500 text-sm">Vue d'ensemble de vos performances Vinted</p>
       </div>
-
+      {/* Résumé rapide */}
+      <div className="flex flex-wrap gap-4 items-center bg-gradient-to-r from-purple-50 to-pink-50 rounded-xl p-4 border">
+        <div className="flex items-center gap-2 text-purple-700 font-semibold">
+          <Star className="w-5 h-5 text-yellow-400" />
+          Top vente du mois : <span className="font-bold">{topVente.name}</span>
+        </div>
+        <div className="flex items-center gap-2 text-red-600 font-semibold">
+          <AlertTriangle className="w-5 h-5" />
+          Stock critique : <span className="font-bold">{stockCritique}</span> article(s)
+        </div>
+      </div>
       {/* Filtres */}
       <div className="bg-white rounded-xl border p-4 flex flex-wrap gap-4 items-center">
         <Filter label="Période" icon={<Calendar className="w-4 h-4 mr-2" />} />
@@ -66,10 +85,30 @@ export function Dashboard() {
 
       {/* Cartes de statistiques */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-        <StatCard color="blue" title="Chiffre d'affaires" value="25,847€" subtitle="+12.5% vs mois dernier" icon={<BarChart2 className="w-5 h-5" />} />
-        <StatCard color="green" title="Revenus nets" value="20,678€" subtitle="Marge: 80%" icon={<BarChart2 className="w-5 h-5" />} />
-        <StatCard color="purple" title="Ventes totales" value="342" subtitle="+23 cette semaine" icon={<BarChart2 className="w-5 h-5" />} />
-        <StatCard color="orange" title="Marge moyenne" value="78.5%" subtitle="+3.2% vs mois dernier" icon={<BarChart2 className="w-5 h-5" />} />
+        <StatCard
+          color="blue"
+          title="Chiffre d'affaires"
+          value="25,847€"
+          subtitle={<span className="flex items-center gap-1 text-xs"><ArrowUpRight className="w-4 h-4 text-green-300" />+{tendanceCA}% vs mois dernier</span>}
+          icon={<BarChart2 className="w-5 h-5" />} />
+        <StatCard
+          color="green"
+          title="Revenus nets"
+          value={`${totalRevenuNet.toLocaleString()}€`}
+          subtitle={<span className="flex items-center gap-1 text-xs"><ArrowUpRight className="w-4 h-4 text-green-300" />+{tendanceRevenu}%</span>}
+          icon={<BarChart2 className="w-5 h-5" />} />
+        <StatCard
+          color="purple"
+          title="Ventes totales"
+          value="342"
+          subtitle={<span className="flex items-center gap-1 text-xs"><ArrowDownRight className="w-4 h-4 text-red-300" />{tendanceVentes}% cette semaine</span>}
+          icon={<BarChart2 className="w-5 h-5" />} />
+        <StatCard
+          color="orange"
+          title="Marge moyenne"
+          value="78.5%"
+          subtitle={<span className="flex items-center gap-1 text-xs"><ArrowUpRight className="w-4 h-4 text-green-300" />+{tendanceMarge}%</span>}
+          icon={<BarChart2 className="w-5 h-5" />} />
       </div>
 
       {/* Graphiques et top ventes */}
@@ -149,7 +188,7 @@ function Filter({ label, icon }: { label: string, icon?: React.ReactNode }) {
   );
 }
 
-function StatCard({ color, title, value, subtitle, icon }: { color: string, title: string, value: string, subtitle: string, icon: React.ReactNode }) {
+function StatCard({ color, title, value, subtitle, icon }: { color: string, title: string, value: string, subtitle: React.ReactNode, icon: React.ReactNode }) {
   const colorMap: any = {
     blue: "bg-blue-600 text-white",
     green: "bg-green-600 text-white",

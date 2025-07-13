@@ -169,6 +169,7 @@ export default function VentesPage() {
     chiffreAffaires: ventesFiltrees.reduce((sum, v) => sum + v.prix, 0),
     margeTotale: ventesFiltrees.reduce((sum, v) => sum + v.marge, 0),
     panierMoyen: ventesFiltrees.length > 0 ? ventesFiltrees.reduce((sum, v) => sum + v.prix, 0) / ventesFiltrees.length : 0,
+    revenuNet: ventesFiltrees.reduce((sum, v) => sum + v.marge, 0),
   };
 
   // Validation du formulaire
@@ -385,9 +386,9 @@ export default function VentesPage() {
           color="green"
         />
         <StatCard
-          title="Marge totale"
-          value={`${stats.margeTotale.toFixed(0)}€`}
-          subtitle="Bénéfice net"
+          title="Revenu net"
+          value={`${stats.revenuNet.toFixed(0)}€`}
+          subtitle="Après coût d'achat"
           color="purple"
         />
         <StatCard
