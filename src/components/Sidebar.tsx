@@ -74,7 +74,7 @@ export function Sidebar() {
       >
         {/* Bouton hamburger mobile */}
         <button
-          className="absolute top-4 right-4 z-50 bg-white/80 backdrop-blur-sm rounded-full p-2 shadow-lg border border-slate-200 hover:bg-white transition-all duration-200 md:hidden"
+          className="absolute top-4 right-4 z-50 bg-white/80 backdrop-blur-sm rounded-full p-2 shadow-lg border border-slate-200 hover:bg-white hover:shadow-xl hover:scale-110 transition-all duration-200 md:hidden"
           onClick={() => setMobileOpen(false)}
           aria-label="Fermer le menu"
         >
@@ -82,7 +82,7 @@ export function Sidebar() {
         </button>
         {/* Bouton collapse desktop */}
         <button
-          className="hidden md:block absolute -right-3 top-8 bg-white/80 backdrop-blur-sm border border-slate-200 rounded-full p-1.5 shadow-lg hover:shadow-xl transition-all duration-200 z-10 hover:bg-white"
+          className="hidden md:block absolute -right-3 top-8 bg-white/80 backdrop-blur-sm border border-slate-200 rounded-full p-1.5 shadow-lg hover:shadow-xl hover:scale-110 hover:bg-white transition-all duration-200 z-10"
           onClick={() => setCollapsed(!collapsed)}
           aria-label={collapsed ? "Déplier le menu" : "Replier le menu"}
         >
@@ -90,7 +90,7 @@ export function Sidebar() {
         </button>
         {/* Logo modernisé */}
         <div className="flex items-center justify-center mb-8 px-2">
-          <div className="bg-gradient-to-br from-indigo-500 to-purple-600 rounded-2xl p-3 shadow-lg flex items-center justify-center">
+          <div className="bg-gradient-to-br from-indigo-500 to-purple-600 rounded-2xl p-3 shadow-lg flex items-center justify-center hover:shadow-xl hover:scale-105 transition-all duration-200 cursor-pointer">
             <svg width="40" height="40" viewBox="0 0 40 40" fill="none">
               <circle cx="20" cy="20" r="20" fill="white" />
               <text x="50%" y="55%" textAnchor="middle" fill="#6366f1" fontSize="20" fontWeight="bold" dy=".3em" fontFamily="Arial, sans-serif">VP</text>
@@ -124,7 +124,7 @@ export function Sidebar() {
         </nav>
         {/* Section statistiques rapides */}
         {!collapsed && (
-          <div className="bg-gradient-to-br from-slate-50 to-slate-100/50 rounded-xl p-4 border border-slate-200">
+          <div className="bg-gradient-to-br from-slate-50 to-slate-100/50 rounded-xl p-4 border border-slate-200 hover:shadow-lg hover:scale-105 transition-all duration-200 cursor-pointer">
             <div className="space-y-3">
               <div className="flex items-center justify-between text-sm">
                 <span className="text-slate-600">Ventes du jour</span>
@@ -146,7 +146,7 @@ export function Sidebar() {
       </aside>
       {/* Bouton hamburger mobile */}
       <button
-        className="fixed bottom-6 left-6 z-50 bg-gradient-to-r from-indigo-600 to-purple-600 text-white rounded-full p-3 shadow-lg hover:shadow-xl transition-all duration-200 md:hidden"
+        className="fixed bottom-6 left-6 z-50 bg-gradient-to-r from-indigo-600 to-purple-600 text-white rounded-full p-3 shadow-lg hover:shadow-xl hover:scale-110 transition-all duration-200 md:hidden"
         onClick={() => setMobileOpen(true)}
         aria-label="Ouvrir le menu"
       >
@@ -174,7 +174,7 @@ function SidebarItem({ icon, label, href, active, badge, badgeColor, collapsed, 
         className={clsx(
           "flex items-center px-3 py-3 rounded-xl font-medium transition-all duration-200 relative group",
           "text-slate-700 hover:text-slate-900",
-          "hover:bg-white/60 hover:shadow-md",
+          "hover:bg-white/60 hover:shadow-md hover:scale-105",
           active && "bg-gradient-to-r from-indigo-600 to-purple-600 text-white shadow-lg",
           collapsed && "justify-center px-2"
         )}
@@ -187,33 +187,33 @@ function SidebarItem({ icon, label, href, active, badge, badgeColor, collapsed, 
         <span className={clsx(
           "w-10 h-10 flex items-center justify-center rounded-xl transition-all duration-200",
           active 
-            ? "bg-white/20 text-white" 
-            : "text-slate-600 group-hover:text-indigo-600 group-hover:bg-indigo-50"
+            ? "bg-white/20 text-white group-hover:bg-white/30" 
+            : "text-slate-600 group-hover:text-indigo-600 group-hover:bg-indigo-50 group-hover:scale-110"
         )}>
           {icon}
           {notification && (
-            <span className="absolute -top-1 -right-1 w-3 h-3 bg-red-500 rounded-full animate-pulse border-2 border-white"></span>
+            <span className="absolute -top-1 -right-1 w-3 h-3 bg-red-500 rounded-full border-2 border-white" style={{ boxShadow: "0 0 0 8px rgba(248,113,113,0.18)" }}></span>
           )}
         </span>
         {!collapsed && (
-          <span className="ml-3 flex-1 text-sm font-medium">
+          <span className="ml-3 flex-1 text-sm font-medium group-hover:translate-x-1 transition-transform duration-200">
             {label}
           </span>
         )}
         {badge && !collapsed && (
           <span className={clsx(
-            "ml-2 text-xs font-bold px-2 py-0.5 rounded-full",
+            "ml-2 text-xs font-bold px-2 py-0.5 rounded-full transition-all duration-200",
             badgeColor === "red" 
-              ? "bg-red-100 text-red-600" 
+              ? "bg-red-100 text-red-600 group-hover:bg-red-200 group-hover:scale-110" 
               : badgeColor === "yellow"
-              ? "bg-yellow-100 text-yellow-700"
-              : "bg-indigo-100 text-indigo-700"
+              ? "bg-yellow-100 text-yellow-700 group-hover:bg-yellow-200 group-hover:scale-110"
+              : "bg-indigo-100 text-indigo-700 group-hover:bg-indigo-200 group-hover:scale-110"
           )}>
             {badge}
           </span>
         )}
         {active && (
-          <span className="absolute left-0 top-0 bottom-0 w-1 bg-white rounded-r-full" />
+          <span className="absolute left-0 top-0 bottom-0 w-1 bg-white rounded-r-full group-hover:w-1.5 transition-all duration-200" />
         )}
       </Link>
     </li>

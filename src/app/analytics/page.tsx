@@ -29,6 +29,7 @@ import {
   Truck,
   Sparkles
 } from "lucide-react";
+import { motion, AnimatePresence } from "framer-motion";
 
 export default function AnalyticsPage() {
   const { ventes, articles, stock } = useData();
@@ -164,228 +165,260 @@ export default function AnalyticsPage() {
   ];
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-100 p-6">
-      {/* Header avec titre et actions */}
-      <div className="mb-8">
-        <div className="flex items-center justify-between mb-4">
-          <div>
-            <h1 className="text-4xl font-bold bg-gradient-to-r from-indigo-600 to-purple-600 bg-clip-text text-transparent">
-              Analytics
-            </h1>
-            <p className="text-slate-600 mt-2 text-lg">Analysez vos performances et optimisez vos ventes</p>
-          </div>
-          <div className="flex items-center gap-3">
-            <Button 
-              variant="outline" 
-              className="flex items-center gap-2 bg-white/80 backdrop-blur-sm border-slate-200 hover:bg-white"
-            >
-              <Download className="w-4 h-4" />
-              Exporter
-            </Button>
-          </div>
-        </div>
-      </div>
-
-      {/* Cartes de statistiques modernisées */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-        <StatCard
-          title="Ventes totales"
-          value={stats?.totalVentes != null ? stats.totalVentes.toString() : '0'}
-          subtitle="Cette période"
-          icon={<ShoppingCart className="w-6 h-6" />}
-          color="blue"
-          evolution="+12%"
-        />
-        <StatCard
-          title="Chiffre d'affaires"
-          value={stats?.totalRevenus != null ? stats.totalRevenus.toString() + '€' : '0€'}
-          subtitle="Total des ventes"
-          icon={<DollarSign className="w-6 h-6" />}
-          color="green"
-          evolution="+8%"
-        />
-        <StatCard
-          title="Total articles"
-          value={stats?.totalArticles != null ? stats.totalArticles.toString() : '0'}
-          subtitle="Dans l'inventaire"
-          icon={<Package className="w-6 h-6" />}
-          color="purple"
-          evolution="+15%"
-        />
-        <StatCard
-          title="Stock critique"
-          value={stats?.stockCritique != null ? stats.stockCritique.toString() : '0'}
-          subtitle="Articles en stock critique"
-          icon={<AlertCircle className="w-6 h-6" />}
-          color="orange"
-          evolution="+5%"
-        />
-      </div>
-
-      {/* Section filtres */}
-      <div className="bg-white/80 backdrop-blur-sm rounded-2xl border border-slate-200 p-6 mb-8 shadow-sm">
-        <div className="flex items-center justify-between mb-4">
-          <div className="flex items-center gap-3">
-            <Filter className="w-5 h-5 text-slate-600" />
-            <h2 className="text-lg font-semibold text-slate-800">Filtres d'analyse</h2>
-          </div>
-          <Button 
-            variant="outline" 
-            size="sm" 
-            onClick={() => setFiltresOuverts(!filtresOuverts)}
-            className="flex items-center gap-2"
-          >
-            {filtresOuverts ? "Masquer" : "Afficher"} les filtres
-            <ChevronDown className={`w-4 h-4 transition-transform ${filtresOuverts ? 'rotate-180' : ''}`} />
-          </Button>
-        </div>
-
-        {filtresOuverts && (
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 pt-4 border-t border-slate-200">
+    <AnimatePresence mode="wait">
+      <motion.div
+        key="analytics-page"
+        initial={{ opacity: 0, y: 32 }}
+        animate={{ opacity: 1, y: 0 }}
+        exit={{ opacity: 0, y: -32 }}
+        transition={{ duration: 0.5, ease: "easeOut" }}
+        className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-100 p-6"
+      >
+        {/* Header avec titre et actions */}
+        <motion.div
+          initial={{ opacity: 0, y: 24 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.1, duration: 0.5, ease: "easeOut" }}
+          className="mb-8"
+        >
+          <div className="flex items-center justify-between mb-4">
             <div>
-              <label className="block text-sm font-medium text-slate-700 mb-2">Période</label>
+              <h1 className="text-4xl font-bold bg-gradient-to-r from-indigo-600 to-purple-600 bg-clip-text text-transparent">
+                Analytics
+              </h1>
+              <p className="text-slate-600 mt-2 text-lg">Analysez vos performances et optimisez vos ventes</p>
+            </div>
+            <div className="flex items-center gap-3">
+              <Button 
+                variant="outline" 
+                className="flex items-center gap-2 bg-white/80 backdrop-blur-sm border-slate-200 hover:bg-white hover:border-indigo-300 transition-all duration-200 hover:scale-105 hover:shadow-lg"
+              >
+                <Download className="w-4 h-4 group-hover:rotate-12 transition-transform duration-200" />
+                Exporter
+              </Button>
+            </div>
+          </div>
+        </motion.div>
+
+        {/* Filtres */}
+        <motion.div
+          initial={{ opacity: 0, y: 24 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.2, duration: 0.5, ease: "easeOut" }}
+          className="bg-white/80 backdrop-blur-sm rounded-2xl border border-slate-200 p-6 mb-8 shadow-sm hover:shadow-lg hover:scale-[1.01] transition-all duration-300"
+        >
+          <div className="flex flex-col lg:flex-row lg:items-center gap-4">
+            <div className="flex items-center gap-3">
               <select
                 value={periode}
                 onChange={(e) => setPeriode(e.target.value)}
-                className="w-full px-3 py-2 bg-white/50 border border-slate-200 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
+                className="px-4 py-2 border border-slate-200 rounded-lg bg-white focus:ring-2 focus:ring-indigo-400 focus:border-indigo-400 transition-all duration-200 hover:border-indigo-300 hover:scale-105"
               >
                 {periodes.map((p) => (
                   <option key={p.value} value={p.value}>{p.label}</option>
                 ))}
               </select>
-            </div>
-
-            <div>
-              <label className="block text-sm font-medium text-slate-700 mb-2">Catégorie</label>
               <select
                 value={categorie}
                 onChange={(e) => setCategorie(e.target.value)}
-                className="w-full px-3 py-2 bg-white/50 border border-slate-200 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
+                className="px-4 py-2 border border-slate-200 rounded-lg bg-white focus:ring-2 focus:ring-indigo-400 focus:border-indigo-400 transition-all duration-200 hover:border-indigo-300 hover:scale-105"
               >
                 {categories.map((cat) => (
                   <option key={cat} value={cat}>{cat}</option>
                 ))}
               </select>
-            </div>
-          </div>
-        )}
-      </div>
-
-      {/* Insights et alertes */}
-      {insights.length > 0 && (
-        <div className="bg-white/80 backdrop-blur-sm rounded-2xl border border-slate-200 p-6 mb-8 shadow-sm">
-          <div className="flex items-center gap-3 mb-4">
-            <div className="w-10 h-10 bg-gradient-to-br from-orange-100 to-red-100 rounded-xl flex items-center justify-center">
-              <Activity className="w-5 h-5 text-orange-600" />
-            </div>
-            <div>
-              <h3 className="font-semibold text-slate-800 text-lg">Insights et alertes</h3>
-              <p className="text-slate-600 text-sm">Points d'attention pour optimiser vos performances</p>
-            </div>
-          </div>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-            {insights.map((insight, index) => (
-              <div
-                key={index}
-                className={`p-4 rounded-xl border ${
-                  insight.type === "warning" 
-                    ? "bg-orange-50 border-orange-200 text-orange-800" 
-                    : "bg-blue-50 border-blue-200 text-blue-800"
-                }`}
+              <Button
+                variant="outline"
+                className="flex items-center gap-2 bg-white/80 backdrop-blur-sm border-slate-200 hover:bg-white hover:border-indigo-300 transition-all duration-200 hover:scale-105 hover:shadow-lg"
+                onClick={() => setFiltresOuverts(!filtresOuverts)}
               >
-                <div className="flex items-center gap-2">
-                  {insight.icon}
-                  <span className="text-sm font-medium">{insight.message}</span>
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
-      )}
-
-      {/* Graphiques */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-8">
-        <div className="bg-white/80 backdrop-blur-sm rounded-2xl border border-slate-200 p-6 shadow-sm">
-          <div className="flex items-center gap-3 mb-4">
-            <div className="w-8 h-8 bg-gradient-to-br from-indigo-100 to-purple-100 rounded-lg flex items-center justify-center">
-              <BarChart3 className="w-4 h-4 text-indigo-600" />
+                <Filter className="w-4 h-4 group-hover:rotate-180 transition-transform duration-200" />
+                Filtres avancés
+              </Button>
             </div>
-            <h3 className="font-semibold text-slate-800">Évolution des ventes</h3>
           </div>
-          <div className="h-64">
+        </motion.div>
+
+        {/* Cartes de statistiques principales */}
+        <motion.div
+          initial={{ opacity: 0, y: 24 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.3, duration: 0.5, ease: "easeOut" }}
+          className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8"
+        >
+          <StatCard
+            title="Ventes totales"
+            value={statsLocal.totalVentes.toString()}
+            subtitle="Cette période"
+            icon={<ShoppingCart className="w-6 h-6" />}
+            color="blue"
+            evolution="+12.5%"
+          />
+          <StatCard
+            title="Chiffre d'affaires"
+            value={`${statsLocal.chiffreAffaires.toLocaleString()}€`}
+            subtitle="CA total"
+            icon={<DollarSign className="w-6 h-6" />}
+            color="green"
+            evolution="+8.2%"
+          />
+          <StatCard
+            title="Marge totale"
+            value={`${statsLocal.margeTotale.toLocaleString()}€`}
+            subtitle="Bénéfices"
+            icon={<TrendingUp className="w-6 h-6" />}
+            color="purple"
+            evolution="+15.3%"
+          />
+          <StatCard
+            title="Panier moyen"
+            value={`${statsLocal.panierMoyen.toFixed(0)}€`}
+            subtitle="Par vente"
+            icon={<Users className="w-6 h-6" />}
+            color="orange"
+            evolution="+5.7%"
+          />
+        </motion.div>
+
+        {/* Graphiques */}
+        <motion.div
+          initial={{ opacity: 0, y: 24 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.4, duration: 0.5, ease: "easeOut" }}
+          className="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-8"
+        >
+          {/* Graphique des ventes */}
+          <div className="bg-white/80 backdrop-blur-sm rounded-2xl border border-slate-200 p-6 shadow-sm hover:shadow-lg hover:scale-[1.01] transition-all duration-300">
+            <div className="flex items-center gap-3 mb-6">
+              <div className="w-8 h-8 bg-gradient-to-br from-blue-100 to-indigo-100 rounded-lg flex items-center justify-center group-hover:shadow-md transition-all duration-200">
+                <BarChart3 className="w-4 h-4 text-blue-600 group-hover:scale-110 transition-transform duration-200" />
+              </div>
+              <div>
+                <h2 className="font-semibold text-slate-800 text-lg group-hover:text-slate-900 transition-colors duration-200">Évolution des ventes</h2>
+                <p className="text-slate-500 text-sm group-hover:text-slate-600 transition-colors duration-200">Ventes par mois</p>
+              </div>
+            </div>
             <SalesChart />
           </div>
-        </div>
 
-        <div className="bg-white/80 backdrop-blur-sm rounded-2xl border border-slate-200 p-6 shadow-sm">
-          <div className="flex items-center gap-3 mb-4">
-            <div className="w-8 h-8 bg-gradient-to-br from-green-100 to-emerald-100 rounded-lg flex items-center justify-center">
-              <TrendingUp className="w-4 h-4 text-green-600" />
+          {/* Graphique des revenus */}
+          <div className="bg-white/80 backdrop-blur-sm rounded-2xl border border-slate-200 p-6 shadow-sm hover:shadow-lg hover:scale-[1.01] transition-all duration-300">
+            <div className="flex items-center gap-3 mb-6">
+              <div className="w-8 h-8 bg-gradient-to-br from-green-100 to-emerald-100 rounded-lg flex items-center justify-center group-hover:shadow-md transition-all duration-200">
+                <TrendingUp className="w-4 h-4 text-green-600 group-hover:scale-110 transition-transform duration-200" />
+              </div>
+              <div>
+                <h2 className="font-semibold text-slate-800 text-lg group-hover:text-slate-900 transition-colors duration-200">Évolution des revenus</h2>
+                <p className="text-slate-500 text-sm group-hover:text-slate-600 transition-colors duration-200">Revenus par mois</p>
+              </div>
             </div>
-            <h3 className="font-semibold text-slate-800">Revenus et marges</h3>
-          </div>
-          <div className="h-64">
             <RevenueChart />
           </div>
-        </div>
-      </div>
+        </motion.div>
 
-      {/* Top articles et catégories */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-        <div className="bg-white/80 backdrop-blur-sm rounded-2xl border border-slate-200 p-6 shadow-sm">
-          <div className="flex items-center gap-3 mb-4">
-            <div className="w-8 h-8 bg-gradient-to-br from-purple-100 to-pink-100 rounded-lg flex items-center justify-center">
-              <Star className="w-4 h-4 text-purple-600" />
-            </div>
-            <h3 className="font-semibold text-slate-800">Top articles</h3>
-          </div>
-          <div className="space-y-3">
-            {topArticles.map((article, index) => (
-              <div key={index} className="flex items-center justify-between p-3 bg-slate-50/50 rounded-lg">
-                <div className="flex items-center gap-3">
-                  <div className="w-8 h-8 bg-gradient-to-br from-indigo-100 to-purple-100 rounded-lg flex items-center justify-center text-xs font-bold text-indigo-600">
-                    {index + 1}
-                  </div>
-                  <div>
-                    <div className="font-medium text-slate-900">{article.nom}</div>
-                    <div className="text-sm text-slate-500">{article.vues} vues • {article.likes} likes</div>
-                  </div>
+        {/* Insights et alertes */}
+        <AnimatePresence>
+          {insights.length > 0 && (
+            <motion.div
+              initial={{ opacity: 0, y: 24 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -24 }}
+              transition={{ delay: 0.5, duration: 0.5, ease: "easeOut" }}
+              className="bg-yellow-50/80 backdrop-blur-sm border border-yellow-200 rounded-2xl p-6 mb-8 shadow-sm hover:shadow-lg hover:scale-[1.01] transition-all duration-300"
+            >
+              <div className="flex items-center gap-3 mb-4">
+                <div className="w-10 h-10 bg-yellow-100 rounded-xl flex items-center justify-center group-hover:scale-110 transition-transform duration-200">
+                  <Sparkles className="w-5 h-5 text-yellow-600 group-hover:rotate-12 transition-transform duration-200" />
                 </div>
-                <div className="text-right">
-                  <div className="font-medium text-slate-900">{article.prix}€</div>
-                  <div className="text-sm text-green-600">+{article.marge}€</div>
+                <div>
+                  <h3 className="font-semibold text-yellow-800 text-lg group-hover:text-yellow-900 transition-colors duration-200">Insights et recommandations</h3>
+                  <p className="text-yellow-600 text-sm group-hover:text-yellow-700 transition-colors duration-200">Optimisez vos performances</p>
                 </div>
               </div>
-            ))}
-          </div>
-        </div>
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                {insights.map((insight, index) => (
+                  <div key={index} className="flex items-center gap-3 p-3 bg-yellow-100/50 rounded-xl hover:bg-yellow-100 hover:scale-105 transition-all duration-200 cursor-pointer group">
+                    <div className="p-2 bg-yellow-200 rounded-lg group-hover:scale-110 transition-transform duration-200">
+                      {insight.icon}
+                    </div>
+                    <span className="text-sm text-yellow-800 group-hover:text-yellow-900 transition-colors duration-200">{insight.message}</span>
+                  </div>
+                ))}
+              </div>
+            </motion.div>
+          )}
+        </AnimatePresence>
 
-        <div className="bg-white/80 backdrop-blur-sm rounded-2xl border border-slate-200 p-6 shadow-sm">
-          <div className="flex items-center gap-3 mb-4">
-            <div className="w-8 h-8 bg-gradient-to-br from-orange-100 to-red-100 rounded-lg flex items-center justify-center">
-              <Target className="w-4 h-4 text-orange-600" />
+        {/* Top articles et catégories */}
+        <motion.div
+          initial={{ opacity: 0, y: 24 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.6, duration: 0.5, ease: "easeOut" }}
+          className="grid grid-cols-1 lg:grid-cols-2 gap-8"
+        >
+          {/* Top articles */}
+          <div className="bg-white/80 backdrop-blur-sm rounded-2xl border border-slate-200 p-6 shadow-sm hover:shadow-lg hover:scale-[1.01] transition-all duration-300">
+            <div className="flex items-center gap-3 mb-6">
+              <div className="w-8 h-8 bg-gradient-to-br from-purple-100 to-pink-100 rounded-lg flex items-center justify-center group-hover:shadow-md transition-all duration-200">
+                <Star className="w-4 h-4 text-purple-600 group-hover:scale-110 transition-transform duration-200" />
+              </div>
+              <div>
+                <h2 className="font-semibold text-slate-800 text-lg group-hover:text-slate-900 transition-colors duration-200">Top articles</h2>
+                <p className="text-slate-500 text-sm group-hover:text-slate-600 transition-colors duration-200">Les plus populaires</p>
+              </div>
             </div>
-            <h3 className="font-semibold text-slate-800">Top catégories</h3>
-          </div>
-          <div className="space-y-3">
-            {topCategories.map((cat, index) => (
-              <div key={index} className="flex items-center justify-between p-3 bg-slate-50/50 rounded-lg">
-                <div className="flex items-center gap-3">
-                  <div className="w-8 h-8 bg-gradient-to-br from-orange-100 to-red-100 rounded-lg flex items-center justify-center text-xs font-bold text-orange-600">
+            <div className="space-y-4">
+              {topArticles.map((article, index) => (
+                <div key={index} className="flex items-center gap-4 p-3 rounded-xl hover:bg-slate-50 transition-all duration-200 hover:scale-105 cursor-pointer group">
+                  <div className="w-8 h-8 bg-gradient-to-br from-indigo-100 to-purple-100 rounded-lg flex items-center justify-center font-bold text-indigo-600 group-hover:scale-110 transition-transform duration-200">
                     {index + 1}
                   </div>
-                  <div className="font-medium text-slate-900">{cat.categorie}</div>
+                  <div className="flex-1">
+                    <div className="font-semibold text-slate-800 group-hover:text-slate-900 transition-colors duration-200">{article.nom}</div>
+                    <div className="text-sm text-slate-500 group-hover:text-slate-600 transition-colors duration-200">{article.vues} vues • {article.likes} likes</div>
+                  </div>
+                  <div className="text-right">
+                    <div className="font-semibold text-slate-800 group-hover:text-slate-900 transition-colors duration-200">{article.prix}€</div>
+                    <div className="text-sm text-green-600 group-hover:text-green-700 transition-colors duration-200">+{article.marge}€</div>
+                  </div>
                 </div>
-                <div className="text-right">
-                  <div className="font-medium text-slate-900">{cat.count}</div>
-                  <div className="text-sm text-slate-500">ventes</div>
-                </div>
-              </div>
-            ))}
+              ))}
+            </div>
           </div>
-        </div>
-      </div>
-    </div>
+
+          {/* Top catégories */}
+          <div className="bg-white/80 backdrop-blur-sm rounded-2xl border border-slate-200 p-6 shadow-sm hover:shadow-lg hover:scale-[1.01] transition-all duration-300">
+            <div className="flex items-center gap-3 mb-6">
+              <div className="w-8 h-8 bg-gradient-to-br from-orange-100 to-red-100 rounded-lg flex items-center justify-center group-hover:shadow-md transition-all duration-200">
+                <Target className="w-4 h-4 text-orange-600 group-hover:scale-110 transition-transform duration-200" />
+              </div>
+              <div>
+                <h2 className="font-semibold text-slate-800 text-lg group-hover:text-slate-900 transition-colors duration-200">Top catégories</h2>
+                <p className="text-slate-500 text-sm group-hover:text-slate-600 transition-colors duration-200">Performance par catégorie</p>
+              </div>
+            </div>
+            <div className="space-y-4">
+              {topCategories.map((cat, index) => (
+                <div key={index} className="flex items-center gap-4 p-3 rounded-xl hover:bg-slate-50 transition-all duration-200 hover:scale-105 cursor-pointer group">
+                  <div className="w-8 h-8 bg-gradient-to-br from-orange-100 to-red-100 rounded-lg flex items-center justify-center font-bold text-orange-600 group-hover:scale-110 transition-transform duration-200">
+                    {index + 1}
+                  </div>
+                  <div className="flex-1">
+                    <div className="font-semibold text-slate-800 group-hover:text-slate-900 transition-colors duration-200">{cat.categorie}</div>
+                    <div className="text-sm text-slate-500 group-hover:text-slate-600 transition-colors duration-200">{cat.count} ventes</div>
+                  </div>
+                  <div className="text-right">
+                    <div className="text-sm font-medium text-slate-600 group-hover:text-slate-700 transition-colors duration-200">
+                      {((cat.count / ventes.length) * 100).toFixed(1)}%
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        </motion.div>
+      </motion.div>
+    </AnimatePresence>
   );
 }
 
@@ -405,31 +438,44 @@ function StatCard({
   color: string,
   evolution?: string
 }) {
+  const isPositive = evolution?.startsWith('+');
   const colorClasses = {
-    blue: "from-blue-500 to-blue-600",
-    green: "from-green-500 to-green-600",
-    purple: "from-purple-500 to-purple-600",
-    orange: "from-orange-500 to-orange-600",
+    blue: 'bg-gradient-to-br from-blue-500 to-blue-600',
+    green: 'bg-gradient-to-br from-green-500 to-green-600',
+    purple: 'bg-gradient-to-br from-purple-500 to-purple-600',
+    orange: 'bg-gradient-to-br from-orange-500 to-orange-600',
+    red: 'bg-gradient-to-br from-red-500 to-red-600',
   };
 
   return (
-    <div className="bg-white/80 backdrop-blur-sm rounded-2xl border border-slate-200 p-6 shadow-sm hover:shadow-md transition-all duration-200">
-      <div className="flex items-center justify-between">
-        <div>
-          <p className="text-sm font-medium text-slate-600">{title}</p>
-          <p className="text-2xl font-bold text-slate-900 mt-1">{value}</p>
-          <p className="text-xs text-slate-500 mt-1">{subtitle}</p>
+    <div className={`${colorClasses[color as keyof typeof colorClasses]} rounded-2xl p-6 text-white shadow-lg hover:shadow-xl hover:scale-105 transition-all duration-300 cursor-pointer group relative overflow-hidden`}>
+      {/* Effet de brillance au hover */}
+      <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/10 to-transparent -translate-x-full group-hover:translate-x-full transition-transform duration-700 ease-out"></div>
+      
+      <div className="relative z-10">
+        <div className="flex items-center justify-between mb-4">
+          <div className="p-3 bg-white/20 rounded-xl group-hover:bg-white/30 transition-all duration-200">
+            {React.cloneElement(icon as React.ReactElement, { 
+              className: 'w-6 h-6 group-hover:scale-110 transition-transform duration-200' 
+            })}
+          </div>
+          {evolution && (
+            <div className="flex items-center gap-1 text-sm">
+              {isPositive ? (
+                <TrendingUp className="w-4 h-4 group-hover:scale-110 transition-transform duration-200" />
+              ) : (
+                <TrendingUp className="w-4 h-4 rotate-180 group-hover:scale-110 transition-transform duration-200" />
+              )}
+              <span className="font-semibold group-hover:scale-110 transition-transform duration-200">{evolution}</span>
+            </div>
+          )}
         </div>
-        <div className={`w-12 h-12 bg-gradient-to-br ${colorClasses[color as keyof typeof colorClasses]} rounded-xl flex items-center justify-center text-white shadow-lg`}>
-          {icon}
+        <div className="mb-2">
+          <h3 className="text-lg font-semibold group-hover:scale-105 transition-transform duration-200">{title}</h3>
+          <p className="text-2xl font-bold group-hover:scale-105 transition-transform duration-200">{value}</p>
         </div>
+        <p className="text-white/80 text-sm group-hover:text-white transition-colors duration-200">{subtitle}</p>
       </div>
-      {evolution && (
-        <div className="flex items-center gap-1 mt-3">
-          <TrendingUp className="w-3 h-3 text-green-500" />
-          <span className="text-xs text-green-600 font-medium">{evolution}</span>
-        </div>
-      )}
     </div>
   );
 } 

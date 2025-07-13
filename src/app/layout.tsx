@@ -2,8 +2,13 @@ import { Providers } from "./providers";
 import { Sidebar } from '@/components/Sidebar';
 import { Header } from '@/components/Header';
 import './globals.css';
+// SUPPRIME: import { AnimatePresence } from "framer-motion";
 
-export default function RootLayout({ children }: { children: React.ReactNode }) {
+export default function RootLayout({
+  children,
+}: {
+  children: React.ReactNode;
+}) {
   return (
     <html lang="fr">
       <body>

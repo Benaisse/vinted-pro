@@ -2,6 +2,7 @@
 
 import React, { useEffect, useState } from 'react'
 import { TrendingUp, TrendingDown } from 'lucide-react'
+import { motion, useAnimation } from "framer-motion";
 
 interface StatsCardProps {
   title: string
@@ -56,44 +57,82 @@ const colorClasses = {
 export function StatsCard({ title, value, subtitle, icon, color, trend }: StatsCardProps) {
   const [isMounted, setIsMounted] = useState(false);
   useEffect(() => { setIsMounted(true); }, []);
-  if (!isMounted) return null;
-  const colors = colorClasses[color]
+  const colors = colorClasses[color];
+
+  // Animation du compteur
+  const [displayValue, setDisplayValue] = useState(typeof value === 'number' ? 0 : value);
+  useEffect(() => {
+    if (typeof value === 'number') {
+      let start = 0;
+      const end = value as number;
+      if (start === end) return;
+      let current = start;
+      const increment = end / 40;
+      const step = () => {
+        current += increment;
+        if (current < end) {
+          setDisplayValue(Math.floor(current));
+          requestAnimationFrame(step);
+        } else {
+          setDisplayValue(end);
+        }
+      };
+      step();
+    } else {
+      setDisplayValue(value);
+    }
+  }, [value]);
+
   return (
-    <div className={`
+    <motion.div
+      initial={{ opacity: 0, y: 24 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.6, ease: "easeOut" }}
+      whileHover={{ 
+        scale: 1.02,
+        y: -4,
+        transition: { duration: 0.2, ease: "easeOut" }
+      }}
+      className={`
       ${colors.bg} ${colors.hover} ${colors.shadow}
       w-full h-36 rounded-2xl flex flex-col justify-center p-6 
-      shadow-lg hover:shadow-2xl hover:scale-105 
+        shadow-lg hover:shadow-2xl hover:shadow-black/10
       transition-all duration-300 ease-out cursor-pointer
       min-w-[13rem] max-w-full relative overflow-hidden
       group dark:shadow-gray-900/20
-    `}>
+        border border-white/10 hover:border-white/20
+      `}
+    >
       {/* Effet de brillance au hover */}
       <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/10 to-transparent -translate-x-full group-hover:translate-x-full transition-transform duration-700 ease-out"></div>
       
+      {/* Effet de glow au hover */}
+      <div className="absolute inset-0 bg-gradient-to-br from-white/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
+      
       <div className="flex items-center justify-between h-full relative z-10">
         <div className="flex flex-col gap-2 justify-center">
-          <span className="text-sm font-medium text-white/90 leading-tight tracking-wide">
+          <span className="text-sm font-medium text-white/90 leading-tight tracking-wide group-hover:text-white transition-colors duration-200">
             {title}
           </span>
-          <span className={`text-3xl font-bold ${colors.value} leading-tight`}>
-            {isMounted ? (typeof value === 'number' ? value.toLocaleString() : value) : ''}
+          <span className={`text-3xl font-bold ${colors.value} leading-tight group-hover:scale-105 transition-transform duration-200`}>
+            {isMounted ? (typeof value === 'number' ? displayValue.toLocaleString() : value) : ''}
           </span>
         </div>
         <div className={`
           p-3 rounded-xl ${colors.icon} 
           flex items-center justify-center
-          group-hover:scale-110 group-hover:rotate-3
+          group-hover:scale-110 group-hover:rotate-3 group-hover:bg-white/30
           transition-all duration-300 ease-out
+          shadow-sm group-hover:shadow-md
         `}>
           {React.cloneElement(icon as React.ReactElement, { 
-            className: 'w-7 h-7' 
+            className: 'w-7 h-7 group-hover:scale-110 transition-transform duration-200' 
           })}
         </div>
       </div>
-      
       <div className="flex items-end justify-between mt-3 relative z-10">
         {subtitle && (
-          <div className="text-xs text-white/80 truncate max-w-[10rem] font-medium">
+          <div className="text-xs text-white/80 truncate max-w-[10rem] font-medium group-hover:text-white/90 transition-colors duration-200">
             {subtitle}
           </div>
         )}
@@ -101,22 +140,23 @@ export function StatsCard({ title, value, subtitle, icon, color, trend }: StatsC
           <div className={`
             flex items-center gap-1 text-xs font-semibold px-2 py-1 rounded-full
             ${trend.isPositive 
-              ? 'bg-green-500/20 text-green-100' 
-              : 'bg-red-500/20 text-red-100'
+              ? 'bg-green-500/20 text-green-100 hover:bg-green-500/30' 
+              : 'bg-red-500/20 text-red-100 hover:bg-red-500/30'
             }
-            group-hover:scale-105 transition-transform duration-200
+            group-hover:scale-105 transition-all duration-200
+            shadow-sm group-hover:shadow-md
           `}>
             {trend.isPositive ? (
-              <TrendingUp className="w-3 h-3" />
+              <TrendingUp className="w-3 h-3 group-hover:scale-110 transition-transform duration-200" />
             ) : (
-              <TrendingDown className="w-3 h-3" />
+              <TrendingDown className="w-3 h-3 group-hover:scale-110 transition-transform duration-200" />
             )}
             <span>{Math.abs(trend.value)}%</span>
           </div>
         )}
       </div>
-    </div>
-  )
+    </motion.div>
+  );
 } 
 
 export function StatCardSkeleton() {

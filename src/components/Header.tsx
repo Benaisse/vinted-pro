@@ -75,28 +75,36 @@ export function Header() {
       </div>
       <div className="flex items-center space-x-2 sm:space-x-6">
         {/* Statut en ligne + ventes */}
-        <div className="flex items-center space-x-2 px-2 py-1 bg-gradient-to-r from-purple-100 to-pink-100 rounded-lg border shadow-sm cursor-pointer group" tabIndex={0} title="Statut et ventes du jour">
+        <div className="flex items-center space-x-2 px-2 py-1 bg-gradient-to-r from-purple-100 to-pink-100 rounded-lg border shadow-sm cursor-pointer group hover:shadow-md hover:scale-105 transition-all duration-200" tabIndex={0} title="Statut et ventes du jour">
           <div className="flex items-center space-x-1">
-            <div className="w-2.5 h-2.5 rounded-full animate-pulse shadow-lg border-2 border-white" style={{background: online ? "#a21caf" : "#d1d5db"}}></div>
-            <span className="text-xs font-medium text-purple-700">{online ? "En ligne" : "Hors ligne"}</span>
+            <div
+              className="w-2.5 h-2.5 rounded-full border-2 border-white"
+              style={{
+                background: online ? "#a21caf" : "#f87171",
+                boxShadow: online
+                  ? "0 0 0 8px rgba(168,85,247,0.18)" // violet glow
+                  : "0 0 0 8px rgba(248,113,113,0.18)" // rouge glow
+              }}
+            ></div>
+            <span className="text-xs font-medium text-purple-700 group-hover:text-purple-800 transition-colors duration-200">{online ? "En ligne" : "Hors ligne"}</span>
           </div>
           <span className="hidden sm:inline mx-1 text-gray-300">|</span>
           <div className="text-xs text-gray-700 flex items-center gap-1">
-            <span className="font-bold text-green-600 animate-bounce-slow">+{stats.totalVentes}</span>
-            <span className="hidden sm:inline">ventes aujourd'hui</span>
+            <span className="font-bold text-green-600 animate-bounce-slow group-hover:scale-110 transition-transform duration-200">+{stats.totalVentes}</span>
+            <span className="hidden sm:inline group-hover:text-gray-800 transition-colors duration-200">ventes aujourd'hui</span>
           </div>
         </div>
         {/* Actions rapides */}
         <div className="flex items-center space-x-1 sm:space-x-2">
-          <Button variant="ghost" size="icon" className="relative group" aria-label="Ajouter un article (Ctrl+N)" onClick={() => setModalOpen(true)}>
-            <Package className="h-5 w-5" />
+          <Button variant="ghost" size="icon" className="relative group hover:bg-purple-50 hover:scale-110 transition-all duration-200" aria-label="Ajouter un article (Ctrl+N)" onClick={() => setModalOpen(true)}>
+            <Package className="h-5 w-5 group-hover:rotate-12 transition-transform duration-200" />
             <span className="sr-only">Ajouter</span>
             <div className="absolute left-1/2 -bottom-8 transform -translate-x-1/2 bg-gray-900 text-white text-xs px-2 py-1 rounded opacity-0 group-hover:opacity-100 transition-opacity duration-200 whitespace-nowrap pointer-events-none">
               Ajouter un article (Ctrl+N)
             </div>
           </Button>
-          <Button variant="ghost" size="icon" className="relative group" aria-label="Voir les analytics (Ctrl+A)">
-            <TrendingUp className="h-5 w-5" />
+          <Button variant="ghost" size="icon" className="relative group hover:bg-purple-50 hover:scale-110 transition-all duration-200" aria-label="Voir les analytics (Ctrl+A)">
+            <TrendingUp className="h-5 w-5 group-hover:rotate-12 transition-transform duration-200" />
             <span className="sr-only">Analytics</span>
             <div className="absolute left-1/2 -bottom-8 transform -translate-x-1/2 bg-gray-900 text-white text-xs px-2 py-1 rounded opacity-0 group-hover:opacity-100 transition-opacity duration-200 whitespace-nowrap pointer-events-none">
               Voir les analytics (Ctrl+A)
@@ -106,13 +114,13 @@ export function Header() {
         {/* Notifications */}
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
-            <Button variant="ghost" size="icon" className="relative group" aria-label="Notifications">
+            <Button variant="ghost" size="icon" className="relative group hover:bg-purple-50 hover:scale-110 transition-all duration-200" aria-label="Notifications">
               <div className="relative">
-                <Bell className="h-5 w-5 transition-all duration-200 group-hover:scale-110" />
+                <Bell className="h-5 w-5 transition-all duration-200 group-hover:scale-110 group-hover:rotate-12" />
                 {notifCount > 0 && (
                   <div className="absolute -top-1 -right-1 h-5 w-5 flex items-center justify-center">
                     <div className="absolute inset-0 bg-red-500 rounded-full animate-ping opacity-75"></div>
-                    <div className="relative bg-red-500 text-white text-xs font-bold rounded-full h-5 w-5 flex items-center justify-center">
+                    <div className="relative bg-red-500 text-white text-xs font-bold rounded-full h-5 w-5 flex items-center justify-center group-hover:scale-110 transition-transform duration-200">
                       {notifCount}
                     </div>
                   </div>

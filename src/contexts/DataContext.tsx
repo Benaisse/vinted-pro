@@ -68,7 +68,6 @@ interface DataContextType {
   ajouterAuStock: (article: Article, quantite: number) => void;
 }
 
-export type { DataContextType };
 
 const DataContext = createContext<DataContextType | undefined>(undefined);
 

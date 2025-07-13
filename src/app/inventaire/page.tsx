@@ -7,6 +7,7 @@ import { ArticleFormModal, Article } from "@/components/ArticleFormModal";
 import { useData } from "@/contexts/DataContext";
 import { useStats } from "@/contexts/StatsContext";
 import { Plus, Search, Filter, Eye, Heart, Edit, Archive, Trash2, TrendingUp, Package, DollarSign, Tag, ChevronDown, X, Check, AlertCircle, Clock, Truck, Users, BarChart3, Sparkles } from "lucide-react";
+import { motion, AnimatePresence } from "framer-motion";
 
 export default function InventairePage() {
   const { articles, addArticle, updateArticle, deleteArticle } = useData();
@@ -103,309 +104,374 @@ export default function InventairePage() {
   const statuts = ["Tous", "En vente", "Vendu", "Archivé"];
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-100 p-6">
-      {/* Header avec titre et actions */}
-      <div className="mb-8">
-        <div className="flex items-center justify-between mb-4">
-          <div>
-            <h1 className="text-4xl font-bold bg-gradient-to-r from-indigo-600 to-purple-600 bg-clip-text text-transparent">
-              Inventaire
-            </h1>
-            <p className="text-slate-600 mt-2 text-lg">Gérez votre catalogue d'articles</p>
-          </div>
-          <div className="flex items-center gap-3">
-            <Button 
-              onClick={() => ouvrirModal()} 
-              className="flex items-center gap-2 bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 text-white shadow-lg hover:shadow-xl transition-all duration-200"
-            >
-              <Plus className="w-4 h-4" />
-              Ajouter un article
-            </Button>
-          </div>
-        </div>
-      </div>
-
-      {/* Message de succès */}
-      {messageSucces && <Toast message={messageSucces} type="success" />}
-
-      {/* Cartes de statistiques modernisées */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-        <StatCard
-          title="Total articles"
-          value={stats?.totalArticles != null ? stats.totalArticles.toString() : '0'}
-          subtitle="Dans l'inventaire"
-          icon={<Package className="w-6 h-6" />}
-          color="blue"
-          trend=""
-        />
-        <StatCard
-          title="En vente"
-          value={statsLocal.enVente.toString()}
-          subtitle="Articles actifs"
-          icon={<Tag className="w-6 h-6" />}
-          color="green"
-          trend=""
-        />
-        <StatCard
-          title="Valeur totale"
-          value={statsLocal.valeurTotale.toLocaleString() + '€'}
-          subtitle="Articles en vente"
-          icon={<DollarSign className="w-6 h-6" />}
-          color="purple"
-          trend=""
-        />
-        <StatCard
-          title="Marge totale"
-          value={statsLocal.margeTotale.toLocaleString() + '€'}
-          subtitle="Bénéfice potentiel"
-          icon={<TrendingUp className="w-6 h-6" />}
-          color="orange"
-          trend=""
-        />
-      </div>
-
-      {/* Section filtres et recherche */}
-      <div className="bg-white/80 backdrop-blur-sm rounded-2xl border border-slate-200 p-6 mb-8 shadow-sm">
-        <div className="flex items-center justify-between mb-4">
-          <div className="flex items-center gap-3">
-            <Filter className="w-5 h-5 text-slate-600" />
-            <h2 className="text-lg font-semibold text-slate-800">Filtres et recherche</h2>
-          </div>
-          <div className="flex items-center gap-3">
-            <Button 
-              variant="outline" 
-              size="sm" 
-              onClick={reinitialiserFiltres}
-              className="text-slate-600 hover:text-slate-800"
-            >
-              Réinitialiser
-            </Button>
-            <Button 
-              variant="outline" 
-              size="sm" 
-              onClick={() => setFiltresOuverts(!filtresOuverts)}
-              className="flex items-center gap-2"
-            >
-              {filtresOuverts ? "Masquer" : "Afficher"} les filtres
-              <ChevronDown className={`w-4 h-4 transition-transform ${filtresOuverts ? 'rotate-180' : ''}`} />
-            </Button>
-          </div>
-        </div>
-
-        {/* Barre de recherche principale */}
-        <div className="relative mb-4">
-          <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-slate-400 w-5 h-5" />
-          <Input
-            placeholder="Rechercher par nom ou marque..."
-            value={recherche}
-            onChange={(e) => setRecherche(e.target.value)}
-            className="pl-10 bg-white/50 border-slate-200 focus:border-indigo-500 focus:ring-indigo-500"
-          />
-        </div>
-
-        {/* Filtres avancés */}
-        {filtresOuverts && (
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 pt-4 border-t border-slate-200">
+    <AnimatePresence mode="wait">
+      <motion.div
+        key="inventaire-page"
+        initial={{ opacity: 0, y: 32 }}
+        animate={{ opacity: 1, y: 0 }}
+        exit={{ opacity: 0, y: -32 }}
+        transition={{ duration: 0.5, ease: "easeOut" }}
+        className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-100 p-6"
+      >
+        {/* Header avec titre et actions */}
+        <motion.div
+          initial={{ opacity: 0, y: 24 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.1, duration: 0.5, ease: "easeOut" }}
+          className="mb-8"
+        >
+          <div className="flex items-center justify-between mb-4">
             <div>
-              <label className="block text-sm font-medium text-slate-700 mb-2">Catégorie</label>
+              <h1 className="text-4xl font-bold bg-gradient-to-r from-indigo-600 to-purple-600 bg-clip-text text-transparent">
+                Inventaire
+              </h1>
+              <p className="text-slate-600 mt-2 text-lg">Gérez votre catalogue d'articles</p>
+            </div>
+            <div className="flex items-center gap-3">
+              <Button 
+                onClick={() => ouvrirModal()} 
+                className="flex items-center gap-2 bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 text-white shadow-lg hover:shadow-xl transition-all duration-200 hover:scale-105"
+              >
+                <Plus className="w-4 h-4 group-hover:rotate-90 transition-transform duration-200" />
+                Ajouter un article
+              </Button>
+            </div>
+          </div>
+        </motion.div>
+
+        {/* Message de succès */}
+        <AnimatePresence>
+          {messageSucces && (
+            <motion.div
+              initial={{ opacity: 0, y: -20 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -20 }}
+              transition={{ duration: 0.3 }}
+            >
+              <Toast message={messageSucces} type="success" />
+            </motion.div>
+          )}
+        </AnimatePresence>
+
+        {/* Cartes de statistiques modernisées */}
+        <motion.div
+          initial={{ opacity: 0, y: 24 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.2, duration: 0.5, ease: "easeOut" }}
+          className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8"
+        >
+          <StatCard
+            title="Total articles"
+            value={stats?.totalArticles != null ? stats.totalArticles.toString() : '0'}
+            subtitle="Dans l'inventaire"
+            icon={<Package className="w-6 h-6" />}
+            color="blue"
+            trend=""
+          />
+          <StatCard
+            title="En vente"
+            value={statsLocal.enVente.toString()}
+            subtitle="Articles actifs"
+            icon={<Tag className="w-6 h-6" />}
+            color="green"
+            trend=""
+          />
+          <StatCard
+            title="Valeur totale"
+            value={statsLocal.valeurTotale.toLocaleString() + '€'}
+            subtitle="Articles en vente"
+            icon={<DollarSign className="w-6 h-6" />}
+            color="purple"
+            trend=""
+          />
+          <StatCard
+            title="Marge totale"
+            value={statsLocal.margeTotale.toLocaleString() + '€'}
+            subtitle="Bénéfice potentiel"
+            icon={<TrendingUp className="w-6 h-6" />}
+            color="orange"
+            trend=""
+          />
+        </motion.div>
+
+        {/* Section filtres et recherche */}
+        <motion.div
+          initial={{ opacity: 0, y: 24 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.3, duration: 0.5, ease: "easeOut" }}
+          className="bg-white/80 backdrop-blur-sm rounded-2xl border border-slate-200 p-6 mb-8 shadow-sm hover:shadow-lg hover:scale-[1.01] transition-all duration-300"
+        >
+          <div className="flex flex-col lg:flex-row lg:items-center gap-4">
+            {/* Barre de recherche */}
+            <div className="flex-1 relative group">
+              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-slate-400 h-5 w-5 group-focus-within:text-indigo-600 transition-colors duration-200" />
+              <Input
+                value={recherche}
+                onChange={(e) => setRecherche(e.target.value)}
+                placeholder="Rechercher un article, marque..."
+                className="pl-10 pr-10 focus:ring-2 focus:ring-indigo-400 focus:border-indigo-400 transition-all duration-200 hover:border-indigo-300"
+              />
+              {recherche && (
+                <button
+                  className="absolute right-3 top-1/2 transform -translate-y-1/2 text-slate-400 hover:text-red-500 focus:outline-none hover:scale-110 transition-all duration-200"
+                  onClick={() => setRecherche("")}
+                >
+                  <X className="h-4 w-4" />
+                </button>
+              )}
+            </div>
+
+            {/* Filtres */}
+            <div className="flex items-center gap-3">
               <select
                 value={filtreCategorie}
                 onChange={(e) => setFiltreCategorie(e.target.value)}
-                className="w-full px-3 py-2 bg-white/50 border border-slate-200 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
+                className="px-4 py-2 border border-slate-200 rounded-lg bg-white focus:ring-2 focus:ring-indigo-400 focus:border-indigo-400 transition-all duration-200 hover:border-indigo-300 hover:scale-105"
               >
                 {categories.map((cat) => (
                   <option key={cat} value={cat}>{cat}</option>
                 ))}
               </select>
-            </div>
-
-            <div>
-              <label className="block text-sm font-medium text-slate-700 mb-2">Statut</label>
               <select
                 value={filtreStatut}
                 onChange={(e) => setFiltreStatut(e.target.value)}
-                className="w-full px-3 py-2 bg-white/50 border border-slate-200 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
+                className="px-4 py-2 border border-slate-200 rounded-lg bg-white focus:ring-2 focus:ring-indigo-400 focus:border-indigo-400 transition-all duration-200 hover:border-indigo-300 hover:scale-105"
               >
-                {statuts.map((statut) => (
-                  <option key={statut} value={statut}>{statut}</option>
+                {statuts.map((stat) => (
+                  <option key={stat} value={stat}>{stat}</option>
                 ))}
               </select>
-            </div>
-          </div>
-        )}
-      </div>
-
-      {/* Tableau des articles modernisé */}
-      <div className="bg-white/80 backdrop-blur-sm rounded-2xl border border-slate-200 overflow-hidden shadow-sm">
-        <div className="p-6 border-b border-slate-200">
-          <div className="flex items-center justify-between">
-            <h3 className="text-lg font-semibold text-slate-800">Liste des articles</h3>
-            <div className="flex items-center gap-2">
-              <span className="text-sm text-slate-600">Lignes par page:</span>
-              <select
-                value={elementsParPage}
-                onChange={(e) => {
-                  setElementsParPage(parseInt(e.target.value));
-                  setPageCourante(1);
-                }}
-                className="px-2 py-1 bg-white/50 border border-slate-200 rounded text-sm focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
+              <Button
+                variant="outline"
+                className="flex items-center gap-2 bg-white/80 backdrop-blur-sm border-slate-200 hover:bg-white hover:border-indigo-300 transition-all duration-200 hover:scale-105 hover:shadow-lg"
+                onClick={() => setFiltresOuverts(!filtresOuverts)}
               >
-                <option value={5}>5</option>
-                <option value={10}>10</option>
-                <option value={20}>20</option>
-                <option value={50}>50</option>
-              </select>
+                <Filter className="w-4 h-4 group-hover:rotate-180 transition-transform duration-200" />
+                Filtres avancés
+              </Button>
+              <Button
+                variant="ghost"
+                className="text-slate-600 hover:text-slate-800 hover:bg-slate-100 transition-all duration-200 hover:scale-105"
+                onClick={reinitialiserFiltres}
+              >
+                <X className="w-4 h-4 group-hover:rotate-90 transition-transform duration-200" />
+              </Button>
             </div>
           </div>
-        </div>
 
-        <div className="overflow-x-auto">
-          <table className="w-full">
-            <thead className="bg-slate-50/80">
-              <tr>
-                <th className="px-6 py-4 text-left text-xs font-semibold text-slate-600 uppercase tracking-wider">Article</th>
-                <th className="px-6 py-4 text-left text-xs font-semibold text-slate-600 uppercase tracking-wider">Catégorie</th>
-                <th className="px-6 py-4 text-left text-xs font-semibold text-slate-600 uppercase tracking-wider">Prix</th>
-                <th className="px-6 py-4 text-left text-xs font-semibold text-slate-600 uppercase tracking-wider">Marge</th>
-                <th className="px-6 py-4 text-left text-xs font-semibold text-slate-600 uppercase tracking-wider">Statut</th>
-                <th className="px-6 py-4 text-left text-xs font-semibold text-slate-600 uppercase tracking-wider">Actions</th>
-              </tr>
-            </thead>
-            <tbody className="bg-white divide-y divide-slate-100">
-              {articlesPage.length === 0 ? (
-                <tr>
-                  <td colSpan={6} className="text-center py-12">
-                    <div className="flex flex-col items-center gap-3">
-                      <Package className="w-12 h-12 text-slate-300" />
-                      <p className="text-slate-500 text-lg">Aucun article trouvé</p>
-                      <p className="text-slate-400 text-sm">Essayez d'ajuster vos filtres ou d'ajouter un nouvel article</p>
+          {/* Filtres avancés */}
+          {filtresOuverts && (
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 pt-4 border-t border-slate-200">
+              <div>
+                <label className="block text-sm font-medium text-slate-700 mb-2">Catégorie</label>
+                <select
+                  value={filtreCategorie}
+                  onChange={(e) => setFiltreCategorie(e.target.value)}
+                  className="w-full px-3 py-2 bg-white/50 border border-slate-200 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
+                >
+                  {categories.map((cat) => (
+                    <option key={cat} value={cat}>{cat}</option>
+                  ))}
+                </select>
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-slate-700 mb-2">Statut</label>
+                <select
+                  value={filtreStatut}
+                  onChange={(e) => setFiltreStatut(e.target.value)}
+                  className="w-full px-3 py-2 bg-white/50 border border-slate-200 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
+                >
+                  {statuts.map((statut) => (
+                    <option key={statut} value={statut}>{statut}</option>
+                  ))}
+                </select>
+              </div>
+            </div>
+          )}
+        </motion.div>
+
+        {/* Grille d'articles */}
+        <motion.div
+          initial={{ opacity: 0, y: 24 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.4, duration: 0.5, ease: "easeOut" }}
+          className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6"
+        >
+          {articlesPage.map((article, index) => (
+            <motion.div
+              key={article.id}
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: index * 0.05, duration: 0.5, ease: "easeOut" }}
+              whileHover={{ 
+                scale: 1.02,
+                y: -4,
+                transition: { duration: 0.2, ease: "easeOut" }
+              }}
+              className="bg-white/80 backdrop-blur-sm rounded-2xl border border-slate-200 p-6 shadow-sm hover:shadow-xl hover:shadow-black/5 transition-all duration-300 cursor-pointer group relative overflow-hidden"
+            >
+              {/* Effet de brillance au hover */}
+              <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/10 to-transparent -translate-x-full group-hover:translate-x-full transition-transform duration-700 ease-out"></div>
+              
+              <div className="relative z-10">
+                {/* Header de la carte */}
+                <div className="flex items-start justify-between mb-4">
+                  <div className="w-12 h-12 bg-gradient-to-br from-indigo-100 to-purple-100 rounded-xl flex items-center justify-center group-hover:scale-110 transition-transform duration-200">
+                    <Package className="w-6 h-6 text-indigo-600 group-hover:rotate-12 transition-transform duration-200" />
+                  </div>
+                  <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity duration-200">
+                    <button 
+                      onClick={(e) => { e.stopPropagation(); ouvrirModal(article); }}
+                      className="p-1 text-slate-400 hover:text-blue-600 hover:scale-110 transition-all duration-200"
+                    >
+                      <Edit className="w-4 h-4" />
+                    </button>
+                    <button 
+                      onClick={(e) => { e.stopPropagation(); archiverArticle(article.id); }}
+                      className="p-1 text-slate-400 hover:text-yellow-600 hover:scale-110 transition-all duration-200"
+                    >
+                      <Archive className="w-4 h-4" />
+                    </button>
+                    <button 
+                      onClick={(e) => { e.stopPropagation(); supprimerArticle(article.id); }}
+                      className="p-1 text-slate-400 hover:text-red-600 hover:scale-110 transition-all duration-200"
+                    >
+                      <Trash2 className="w-4 h-4" />
+                    </button>
+                  </div>
+                </div>
+
+                {/* Contenu de la carte */}
+                <div className="space-y-3">
+                  <div>
+                    <h3 className="font-semibold text-slate-800 group-hover:text-slate-900 transition-colors duration-200 line-clamp-2">
+                      {article.nom}
+                    </h3>
+                    {article.marque && (
+                      <p className="text-sm text-slate-500 group-hover:text-slate-600 transition-colors duration-200">
+                        {article.marque}
+                      </p>
+                    )}
+                  </div>
+
+                  <div className="flex items-center gap-2">
+                    <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-slate-100 text-slate-800 group-hover:bg-slate-200 transition-colors duration-200">
+                      {article.categorie}
+                    </span>
+                    <StatusBadge statut={article.statut} />
+                  </div>
+
+                  <div className="space-y-2">
+                    <div className="flex items-center justify-between">
+                      <span className="text-sm text-slate-600 group-hover:text-slate-700 transition-colors duration-200">Prix</span>
+                      <span className="font-semibold text-slate-800 group-hover:text-slate-900 transition-colors duration-200">{article.prix}€</span>
                     </div>
-                  </td>
-                </tr>
-              ) : (
-                articlesPage.map((article, index) => (
-                  <tr
-                    key={article.id}
-                    className="hover:bg-slate-50/50 transition-colors duration-150 group"
-                    style={{ animationDelay: `${index * 50}ms` }}
-                  >
-                    <td className="px-6 py-4">
-                      <div className="flex items-center">
-                        <div className="w-10 h-10 bg-gradient-to-br from-indigo-100 to-purple-100 rounded-lg flex items-center justify-center mr-3">
-                          <Package className="w-5 h-5 text-indigo-600" />
-                        </div>
-                        <div>
-                          <div className="font-medium text-slate-900">{article.nom}</div>
-                          {article.marque && (
-                            <div className="text-sm text-slate-500">{article.marque}</div>
-                          )}
-                        </div>
-                      </div>
-                    </td>
-                    <td className="px-6 py-4">
-                      <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-indigo-100 text-indigo-800">
-                        {article.categorie}
-                      </span>
-                    </td>
-                    <td className="px-6 py-4">
-                      <div className="text-slate-900 font-medium">{article.prix}€</div>
-                      <div className="text-sm text-slate-500">Coût: {article.cout}€</div>
-                    </td>
-                    <td className="px-6 py-4">
-                      <div className="text-slate-900 font-medium">{article.marge}€</div>
-                      <div className="text-sm text-slate-500">{((article.marge / article.prix) * 100).toFixed(1)}%</div>
-                    </td>
-                    <td className="px-6 py-4">
-                      <StatusBadge statut={article.statut} />
-                    </td>
-                    <td className="px-6 py-4">
-                      <div className="flex items-center gap-2 opacity-0 group-hover:opacity-100 transition-opacity duration-200">
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          onClick={() => ouvrirModal(article)}
-                          className="text-slate-600 hover:text-indigo-600 hover:bg-indigo-50"
-                        >
-                          <Edit className="w-4 h-4" />
-                        </Button>
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          onClick={() => archiverArticle(article.id)}
-                          className="text-slate-600 hover:text-orange-600 hover:bg-orange-50"
-                        >
-                          <Archive className="w-4 h-4" />
-                        </Button>
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          onClick={() => supprimerArticle(article.id)}
-                          className="text-slate-600 hover:text-red-600 hover:bg-red-50"
-                        >
-                          <Trash2 className="w-4 h-4" />
-                        </Button>
-                      </div>
-                    </td>
-                  </tr>
-                ))
-              )}
-            </tbody>
-          </table>
-        </div>
+                    <div className="flex items-center justify-between">
+                      <span className="text-sm text-slate-600 group-hover:text-slate-700 transition-colors duration-200">Marge</span>
+                      <span className="font-semibold text-green-600 group-hover:text-green-700 transition-colors duration-200">+{article.marge}€</span>
+                    </div>
+                  </div>
+
+                  {/* Statistiques */}
+                  <div className="flex items-center justify-between pt-2 border-t border-slate-100">
+                    <div className="flex items-center gap-1 text-xs text-slate-500 group-hover:text-slate-600 transition-colors duration-200">
+                      <Eye className="w-3 h-3" />
+                      <span>{article.vues}</span>
+                    </div>
+                    <div className="flex items-center gap-1 text-xs text-slate-500 group-hover:text-slate-600 transition-colors duration-200">
+                      <Heart className="w-3 h-3" />
+                      <span>{article.likes}</span>
+                    </div>
+                    <div className="text-xs font-medium text-slate-600 group-hover:text-slate-700 transition-colors duration-200">
+                      {article.margePourcent}% marge
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </motion.div>
+          ))}
+        </motion.div>
 
         {/* Pagination */}
-        {totalPages > 1 && (
-          <div className="px-6 py-4 border-t border-slate-200 bg-slate-50/50">
-            <div className="flex items-center justify-between">
-              <div className="text-sm text-slate-600">
-                Affichage de {indexDebut + 1} à {Math.min(indexFin, articlesFiltres.length)} sur {articlesFiltres.length} articles
-              </div>
-              <div className="flex items-center gap-2">
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => setPageCourante(pageCourante - 1)}
-                  disabled={pageCourante === 1}
-                  className="text-slate-600 hover:text-slate-800"
-                >
-                  Précédent
-                </Button>
-                <div className="flex items-center gap-1">
-                  {Array.from({ length: totalPages }, (_, i) => i + 1).map((page) => (
-                    <Button
-                      key={page}
-                      variant={page === pageCourante ? "default" : "outline"}
-                      size="sm"
-                      onClick={() => setPageCourante(page)}
-                      className={page === pageCourante ? "bg-indigo-600 text-white" : "text-slate-600 hover:text-slate-800"}
-                    >
-                      {page}
-                    </Button>
-                  ))}
+          {totalPages > 1 && (
+            <motion.div
+              initial={{ opacity: 0, y: 24 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.5, duration: 0.5, ease: "easeOut" }}
+              className="px-6 py-4 border-t border-slate-200 bg-slate-50/50"
+            >
+              <div className="flex items-center justify-between">
+                <div className="text-sm text-slate-600">
+                  Affichage de {indexDebut + 1} à {Math.min(indexFin, articlesFiltres.length)} sur {articlesFiltres.length} articles
                 </div>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => setPageCourante(pageCourante + 1)}
-                  disabled={pageCourante === totalPages}
-                  className="text-slate-600 hover:text-slate-800"
-                >
-                  Suivant
-                </Button>
+                <div className="flex items-center gap-2">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => setPageCourante(pageCourante - 1)}
+                    disabled={pageCourante === 1}
+                    className="text-slate-600 hover:text-slate-800"
+                  >
+                    Précédent
+                  </Button>
+                  <div className="flex items-center gap-1">
+                    {Array.from({ length: totalPages }, (_, i) => i + 1).map((page) => (
+                      <Button
+                        key={page}
+                        variant={page === pageCourante ? "default" : "outline"}
+                        size="sm"
+                        onClick={() => setPageCourante(page)}
+                        className={page === pageCourante ? "bg-indigo-600 text-white" : "text-slate-600 hover:text-slate-800"}
+                      >
+                        {page}
+                      </Button>
+                    ))}
+                  </div>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => setPageCourante(pageCourante + 1)}
+                    disabled={pageCourante === totalPages}
+                    className="text-slate-600 hover:text-slate-800"
+                  >
+                    Suivant
+                  </Button>
+                </div>
               </div>
-            </div>
-          </div>
-        )}
-      </div>
+            </motion.div>
+          )}
 
-      {/* Modal d'ajout/modification d'article */}
-      <ArticleFormModal
-        open={modalOuvert}
-        onClose={() => setModalOuvert(false)}
-        onSubmit={articleEnEdition ? modifierArticle : ajouterArticle}
-        article={articleEnEdition}
-      />
-    </div>
+        {/* Modal d'ajout/modification d'article */}
+        <AnimatePresence>
+          {modalOuvert && (
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4"
+              onClick={() => setModalOuvert(false)}
+            >
+              <motion.div
+                initial={{ scale: 0.9, opacity: 0 }}
+                animate={{ scale: 1, opacity: 1 }}
+                exit={{ scale: 0.9, opacity: 0 }}
+                transition={{ duration: 0.3, ease: "easeOut" }}
+                className="bg-white rounded-2xl p-6 w-full max-w-md shadow-2xl"
+                onClick={(e) => e.stopPropagation()}
+              >
+                <ArticleFormModal
+                  open={modalOuvert}
+                  onClose={() => setModalOuvert(false)}
+                  onSubmit={articleEnEdition ? modifierArticle : ajouterArticle}
+                  article={articleEnEdition}
+                />
+              </motion.div>
+            </motion.div>
+          )}
+        </AnimatePresence>
+      </motion.div>
+    </AnimatePresence>
   );
 }
 
@@ -418,45 +484,79 @@ function StatCard({ title, value, subtitle, icon, color, trend }: {
   color: string,
   trend: string
 }) {
+  const isPositive = trend.startsWith('+');
   const colorClasses = {
-    blue: "from-blue-500 to-blue-600",
-    green: "from-green-500 to-green-600",
-    purple: "from-purple-500 to-purple-600",
-    orange: "from-orange-500 to-orange-600",
+    blue: 'bg-gradient-to-br from-blue-500 to-blue-600',
+    green: 'bg-gradient-to-br from-green-500 to-green-600',
+    purple: 'bg-gradient-to-br from-purple-500 to-purple-600',
+    orange: 'bg-gradient-to-br from-orange-500 to-orange-600',
+    red: 'bg-gradient-to-br from-red-500 to-red-600',
   };
 
   return (
-    <div className="bg-white/80 backdrop-blur-sm rounded-2xl border border-slate-200 p-6 shadow-sm hover:shadow-md transition-all duration-200">
-      <div className="flex items-center justify-between">
-        <div>
-          <p className="text-sm font-medium text-slate-600">{title}</p>
-          <p className="text-2xl font-bold text-slate-900 mt-1">{value}</p>
-          <p className="text-xs text-slate-500 mt-1">{subtitle}</p>
+    <div className={`${colorClasses[color as keyof typeof colorClasses]} rounded-2xl p-6 text-white shadow-lg hover:shadow-xl hover:scale-105 transition-all duration-300 cursor-pointer group relative overflow-hidden`}>
+      {/* Effet de brillance au hover */}
+      <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/10 to-transparent -translate-x-full group-hover:translate-x-full transition-transform duration-700 ease-out"></div>
+      
+      <div className="relative z-10">
+        <div className="flex items-center justify-between mb-4">
+          <div className="p-3 bg-white/20 rounded-xl group-hover:bg-white/30 transition-all duration-200">
+            {React.cloneElement(icon as React.ReactElement, { 
+              className: 'w-6 h-6 group-hover:scale-110 transition-transform duration-200' 
+            })}
+          </div>
+          {trend && (
+            <div className="flex items-center gap-1 text-sm">
+              {isPositive ? (
+                <TrendingUp className="w-4 h-4 group-hover:scale-110 transition-transform duration-200" />
+              ) : (
+                <TrendingUp className="w-4 h-4 rotate-180 group-hover:scale-110 transition-transform duration-200" />
+              )}
+              <span className="font-semibold group-hover:scale-110 transition-transform duration-200">{trend}</span>
+            </div>
+          )}
         </div>
-        <div className={`w-12 h-12 bg-gradient-to-br ${colorClasses[color as keyof typeof colorClasses]} rounded-xl flex items-center justify-center text-white shadow-lg`}>
-          {icon}
+        <div className="mb-2">
+          <h3 className="text-lg font-semibold group-hover:scale-105 transition-transform duration-200">{title}</h3>
+          <p className="text-2xl font-bold group-hover:scale-105 transition-transform duration-200">{value}</p>
         </div>
-      </div>
-      <div className="flex items-center gap-1 mt-3">
-        <TrendingUp className="w-3 h-3 text-green-500" />
-        <span className="text-xs text-green-600 font-medium">{trend}</span>
+        <p className="text-white/80 text-sm group-hover:text-white transition-colors duration-200">{subtitle}</p>
       </div>
     </div>
   );
 }
 
 function StatusBadge({ statut }: { statut: string }) {
-  const config = {
-    "En vente": { color: "bg-green-100 text-green-800", icon: <Tag className="w-3 h-3" /> },
-    "Vendu": { color: "bg-blue-100 text-blue-800", icon: <Check className="w-3 h-3" /> },
-    "Archivé": { color: "bg-slate-100 text-slate-800", icon: <Archive className="w-3 h-3" /> },
+  const getStatusConfig = (statut: string) => {
+    switch (statut) {
+      case "En vente":
+        return {
+          bg: "bg-green-100 text-green-800 group-hover:bg-green-200",
+          icon: <Tag className="w-3 h-3" />
+        };
+      case "Vendu":
+        return {
+          bg: "bg-blue-100 text-blue-800 group-hover:bg-blue-200",
+          icon: <Check className="w-3 h-3" />
+        };
+      case "Archivé":
+        return {
+          bg: "bg-slate-100 text-slate-800 group-hover:bg-slate-200",
+          icon: <Archive className="w-3 h-3" />
+        };
+      default:
+        return {
+          bg: "bg-slate-100 text-slate-800 group-hover:bg-slate-200",
+          icon: <AlertCircle className="w-3 h-3" />
+        };
+    }
   };
 
-  const { color, icon } = config[statut as keyof typeof config] || config["En vente"];
+  const config = getStatusConfig(statut);
 
   return (
-    <span className={`inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-medium ${color}`}>
-      {icon}
+    <span className={`inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-medium transition-all duration-200 group-hover:scale-105 ${config.bg}`}>
+      {config.icon}
       {statut}
     </span>
   );
@@ -464,11 +564,16 @@ function StatusBadge({ statut }: { statut: string }) {
 
 function Toast({ message, type }: { message: string, type: 'success' | 'error' }) {
   return (
-    <div className={`fixed top-4 right-4 z-50 p-4 rounded-lg shadow-lg backdrop-blur-sm border ${
-      type === 'success' 
-        ? 'bg-green-50 border-green-200 text-green-800' 
-        : 'bg-red-50 border-red-200 text-red-800'
-    }`}>
+    <motion.div
+      initial={{ opacity: 0, y: -20 }}
+      animate={{ opacity: 1, y: 0 }}
+      exit={{ opacity: 0, y: -20 }}
+      transition={{ duration: 0.3 }}
+      className={`fixed top-4 right-4 z-50 p-4 rounded-lg shadow-lg backdrop-blur-sm border ${
+        type === 'success' 
+          ? 'bg-green-50 border-green-200 text-green-800' 
+          : 'bg-red-50 border-red-200 text-red-800'
+      }`}>
       <div className="flex items-center gap-2">
         {type === 'success' ? (
           <Check className="w-4 h-4" />
@@ -477,6 +582,6 @@ function Toast({ message, type }: { message: string, type: 'success' | 'error' }
         )}
         <span className="font-medium">{message}</span>
       </div>
-    </div>
+    </motion.div>
   );
 } 

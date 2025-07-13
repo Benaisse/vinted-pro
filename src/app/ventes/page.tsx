@@ -2,7 +2,7 @@
 import React, { useState, useMemo } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { ChevronDown, Calendar, Plus, Download, Filter, X, Check, AlertCircle, Clock, Truck, TrendingUp, DollarSign, Package, Users, Search, ArrowUpDown, Eye, Edit, Trash2, BarChart3, Sparkles, PieChart, LineChart, Activity } from "lucide-react";
+import { ChevronDown, Calendar, Plus, Download, Filter, X, Check, AlertCircle, Clock, Truck, TrendingUp, DollarSign, Package, Users, Search, ArrowUpDown, Eye, Edit, Trash2, BarChart3, Sparkles, PieChart, LineChart, Activity, ArrowUpRight, ArrowDownRight } from "lucide-react";
 import { useData } from "@/contexts/DataContext";
 import {
   Chart as ChartJS,
@@ -18,6 +18,7 @@ import {
   Filler,
 } from 'chart.js';
 import { Line, Bar, Doughnut } from 'react-chartjs-2';
+import { motion, AnimatePresence } from "framer-motion";
 
 // Enregistrer les composants Chart.js
 ChartJS.register(
@@ -127,16 +128,20 @@ export default function VentesPage() {
   // Ajouter une nouvelle vente
   const ajouterVente = () => {
     if (!validerFormulaire()) return;
-    
+
     const prix = parseFloat(nouvelleVente.prix);
     const cout = parseFloat(nouvelleVente.cout);
-    
+    const marge = prix - cout;
+    const margePourcent = prix > 0 ? (marge / prix) * 100 : 0;
+
     const nouvelleVenteComplete = {
       article: nouvelleVente.article,
       categorie: nouvelleVente.categorie,
       acheteur: nouvelleVente.acheteur,
       prix,
       cout,
+      marge,
+      margePourcent,
       date: nouvelleVente.date,
       statut: nouvelleVente.statut,
     };
@@ -378,501 +383,674 @@ export default function VentesPage() {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-100 p-6">
-      {/* Header avec titre et actions */}
-      <div className="mb-8">
-        <div className="flex items-center justify-between mb-4">
-          <div>
-            <h1 className="text-4xl font-bold bg-gradient-to-r from-indigo-600 to-purple-600 bg-clip-text text-transparent">
-              Ventes
-            </h1>
-            <p className="text-slate-600 mt-2 text-lg">Gérez vos ventes et suivez vos performances</p>
-          </div>
-          <div className="flex items-center gap-3">
-            <Button 
-              onClick={exporterCSV} 
-              variant="outline" 
-              className="flex items-center gap-2 bg-white/80 backdrop-blur-sm border-slate-200 hover:bg-white"
-            >
-              <Download className="w-4 h-4" />
-              Exporter
-            </Button>
-            <Button 
-              onClick={() => setModalOuvert(true)} 
-              className="flex items-center gap-2 bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 text-white shadow-lg hover:shadow-xl transition-all duration-200"
-            >
-              <Plus className="w-4 h-4" />
-              Nouvelle vente
-            </Button>
-          </div>
-        </div>
-      </div>
-
-      {/* Message de succès */}
-      {messageSucces && <Toast message={messageSucces} type="success" />}
-
-      {/* Cartes de statistiques modernisées */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-        <StatCard
-          title="Ventes totales"
-          value={stats.ventesTotales != null ? stats.ventesTotales.toString() : '0'}
-          subtitle="Cette période"
-          icon={<Package className="w-6 h-6" />}
-          color="blue"
-          trend="+12%"
-        />
-        <StatCard
-          title="Chiffre d'affaires"
-          value={stats.chiffreAffaires != null ? stats.chiffreAffaires.toFixed(0) + '€' : '0€'}
-          subtitle="Total des ventes"
-          icon={<DollarSign className="w-6 h-6" />}
-          color="green"
-          trend="+8%"
-        />
-        <StatCard
-          title="Revenu net"
-          value={stats.revenuNet != null ? stats.revenuNet.toFixed(0) + '€' : '0€'}
-          subtitle="Après coût d'achat"
-          icon={<TrendingUp className="w-6 h-6" />}
-          color="purple"
-          trend="+15%"
-        />
-        <StatCard
-          title="Panier moyen"
-          value={stats.panierMoyen != null ? stats.panierMoyen.toFixed(0) + '€' : '0€'}
-          subtitle="Par vente"
-          icon={<Users className="w-6 h-6" />}
-          color="orange"
-          trend="+5%"
-        />
-      </div>
-
-      {/* Section des graphiques */}
-      <div className="mb-8">
-        <div className="flex items-center gap-3 mb-6">
-          <BarChart3 className="w-6 h-6 text-indigo-600" />
-          <h2 className="text-2xl font-bold text-slate-800">Analyses et graphiques</h2>
-        </div>
-        
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-          {/* Graphique d'évolution des ventes */}
-          <div className="bg-white/80 backdrop-blur-sm rounded-2xl border border-slate-200 p-6 shadow-sm">
-            <div className="h-80">
-              <Line data={donneesGraphiques.evolutionVentes} options={optionsEvolution} />
+    <AnimatePresence mode="wait">
+      <motion.div
+        key="ventes-page"
+        initial={{ opacity: 0, y: 32 }}
+        animate={{ opacity: 1, y: 0 }}
+        exit={{ opacity: 0, y: -32 }}
+        transition={{ duration: 0.5, ease: "easeOut" }}
+        className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-100 p-6"
+      >
+        {/* Header avec titre et actions (style Dashboard) */}
+        <motion.div
+          initial={{ opacity: 0, y: 24 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.1, duration: 0.5, ease: "easeOut" }}
+          className="mb-8"
+        >
+          <div className="flex items-center justify-between mb-4">
+            <div>
+              <h1 className="text-4xl font-bold bg-gradient-to-r from-indigo-600 to-purple-600 bg-clip-text text-transparent">
+                Ventes
+              </h1>
+              <p className="text-slate-600 mt-2 text-lg">Suivez et gérez vos transactions</p>
+            </div>
+            <div className="flex items-center gap-3">
+              <Button 
+                variant="outline" 
+                className="flex items-center gap-2 bg-white/80 backdrop-blur-sm border-slate-200 hover:bg-white transition-all duration-200 hover:scale-105 hover:shadow-lg hover:border-indigo-300"
+                onClick={exporterCSV}
+              >
+                <Download className="w-4 h-4 group-hover:rotate-12 transition-transform duration-200" />
+                Exporter
+              </Button>
+              <Button 
+                onClick={() => setModalOuvert(true)}
+                className="flex items-center gap-2 bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 text-white shadow-lg hover:shadow-xl transition-all duration-200 hover:scale-105"
+              >
+                <Plus className="w-4 h-4 group-hover:rotate-90 transition-transform duration-200" />
+                Nouvelle vente
+              </Button>
             </div>
           </div>
+        </motion.div>
 
-          {/* Graphique de répartition par catégorie */}
-          <div className="bg-white/80 backdrop-blur-sm rounded-2xl border border-slate-200 p-6 shadow-sm">
-            <div className="h-80">
-              <Doughnut data={donneesGraphiques.repartitionCategories} options={optionsRepartition} />
-            </div>
-          </div>
-
-          {/* Graphique de performance des marges */}
-          <div className="bg-white/80 backdrop-blur-sm rounded-2xl border border-slate-200 p-6 shadow-sm lg:col-span-2">
-            <div className="h-80">
-              <Bar data={donneesGraphiques.performanceMarges} options={optionsPerformance} />
-            </div>
-          </div>
-        </div>
-      </div>
-
-      {/* Section filtres et recherche */}
-      <div className="bg-white/80 backdrop-blur-sm rounded-2xl border border-slate-200 p-6 mb-8 shadow-sm">
-        <div className="flex items-center justify-between mb-4">
-          <div className="flex items-center gap-3">
-            <Filter className="w-5 h-5 text-slate-600" />
-            <h2 className="text-lg font-semibold text-slate-800">Filtres et recherche</h2>
-          </div>
-          <div className="flex items-center gap-3">
-            <Button 
-              variant="outline" 
-              size="sm" 
-              onClick={reinitialiserFiltres}
-              className="text-slate-600 hover:text-slate-800"
+        {/* Message de succès */}
+        <AnimatePresence>
+          {messageSucces && (
+            <motion.div
+              initial={{ opacity: 0, y: -20 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -20 }}
+              transition={{ duration: 0.3 }}
             >
-              Réinitialiser
-            </Button>
-            <Button 
-              variant="outline" 
-              size="sm" 
-              onClick={() => setFiltresOuverts(!filtresOuverts)}
-              className="flex items-center gap-2"
-            >
-              {filtresOuverts ? "Masquer" : "Afficher"} les filtres
-              <ChevronDown className={`w-4 h-4 transition-transform ${filtresOuverts ? 'rotate-180' : ''}`} />
-            </Button>
-          </div>
-        </div>
+              <Toast message={messageSucces} type="success" />
+            </motion.div>
+          )}
+        </AnimatePresence>
 
-        {/* Barre de recherche principale */}
-        <div className="relative mb-4">
-          <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-slate-400 w-5 h-5" />
-          <Input
-            placeholder="Rechercher par article ou acheteur..."
-            value={recherche}
-            onChange={(e) => setRecherche(e.target.value)}
-            className="pl-10 bg-white/50 border-slate-200 focus:border-indigo-500 focus:ring-indigo-500"
+        {/* StatCards avec style Dashboard */}
+        <motion.div
+          initial={{ opacity: 0, y: 24 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.2, duration: 0.5, ease: "easeOut" }}
+          className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8"
+        >
+          <StatCard
+            title="Ventes totales"
+            value={stats.ventesTotales != null ? stats.ventesTotales.toString() : '0'}
+            subtitle="Cette période"
+            icon={<Package className="w-6 h-6" />}
+            color="purple"
+            trend="+12%"
           />
-        </div>
+          <StatCard
+            title="Chiffre d'affaires"
+            value={stats.chiffreAffaires != null ? stats.chiffreAffaires.toFixed(0) + '€' : '0€'}
+            subtitle="Total des ventes"
+            icon={<DollarSign className="w-6 h-6" />}
+            color="blue"
+            trend="+8%"
+          />
+          <StatCard
+            title="Revenu net"
+            value={stats.revenuNet != null ? stats.revenuNet.toFixed(0) + '€' : '0€'}
+            subtitle="Après coût d'achat"
+            icon={<TrendingUp className="w-6 h-6" />}
+            color="green"
+            trend="+15%"
+          />
+          <StatCard
+            title="Panier moyen"
+            value={stats.panierMoyen != null ? stats.panierMoyen.toFixed(0) + '€' : '0€'}
+            subtitle="Par vente"
+            icon={<Users className="w-6 h-6" />}
+            color="orange"
+            trend="+5%"
+          />
+        </motion.div>
 
-        {/* Filtres avancés */}
-        {filtresOuverts && (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 pt-4 border-t border-slate-200">
-            <div>
-              <label className="block text-sm font-medium text-slate-700 mb-2">Catégorie</label>
-              <select
-                value={filtreCategorie}
-                onChange={(e) => setFiltreCategorie(e.target.value)}
-                className="w-full px-3 py-2 bg-white/50 border border-slate-200 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
-              >
-                {categories.map((cat) => (
-                  <option key={cat} value={cat}>{cat}</option>
-                ))}
-              </select>
+        {/* Section des graphiques avec style Dashboard */}
+        <motion.div
+          initial={{ opacity: 0, y: 24 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.3, duration: 0.5, ease: "easeOut" }}
+          className="mb-8"
+        >
+          <div className="flex items-center gap-3 mb-6">
+            <div className="w-8 h-8 bg-gradient-to-br from-indigo-100 to-purple-100 rounded-lg flex items-center justify-center group-hover:shadow-md transition-all duration-200">
+              <BarChart3 className="w-4 h-4 text-indigo-600 group-hover:scale-110 transition-transform duration-200" />
             </div>
-
             <div>
-              <label className="block text-sm font-medium text-slate-700 mb-2">Statut</label>
-              <select
-                value={filtreStatut}
-                onChange={(e) => setFiltreStatut(e.target.value)}
-                className="w-full px-3 py-2 bg-white/50 border border-slate-200 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
-              >
-                {statuts.map((stat) => (
-                  <option key={stat} value={stat}>{stat}</option>
-                ))}
-              </select>
-            </div>
-
-            <div>
-              <label className="block text-sm font-medium text-slate-700 mb-2">Prix min (€)</label>
-              <Input
-                type="number"
-                placeholder="0"
-                value={prixMin}
-                onChange={(e) => setPrixMin(e.target.value)}
-                className="bg-white/50 border-slate-200 focus:border-indigo-500 focus:ring-indigo-500"
-              />
-            </div>
-
-            <div>
-              <label className="block text-sm font-medium text-slate-700 mb-2">Prix max (€)</label>
-              <Input
-                type="number"
-                placeholder="1000"
-                value={prixMax}
-                onChange={(e) => setPrixMax(e.target.value)}
-                className="bg-white/50 border-slate-200 focus:border-indigo-500 focus:ring-indigo-500"
-              />
+              <h2 className="font-semibold text-slate-800 text-lg group-hover:text-slate-900 transition-colors duration-200">Analyses et graphiques</h2>
+              <p className="text-slate-500 text-sm group-hover:text-slate-600 transition-colors duration-200">Évolution et répartition de vos ventes</p>
             </div>
           </div>
-        )}
-      </div>
-
-      {/* Tableau des ventes modernisé */}
-      <div className="bg-white/80 backdrop-blur-sm rounded-2xl border border-slate-200 overflow-hidden shadow-sm">
-        <div className="p-6 border-b border-slate-200">
-          <div className="flex items-center justify-between">
-            <h3 className="text-lg font-semibold text-slate-800">Liste des ventes</h3>
-            <div className="flex items-center gap-2">
-              <span className="text-sm text-slate-600">Lignes par page:</span>
-              <select
-                value={elementsParPage}
-                onChange={(e) => {
-                  setElementsParPage(parseInt(e.target.value));
-                  setPageCourante(1);
-                }}
-                className="px-2 py-1 bg-white/50 border border-slate-200 rounded text-sm focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
-              >
-                <option value={5}>5</option>
-                <option value={10}>10</option>
-                <option value={20}>20</option>
-                <option value={50}>50</option>
-              </select>
-            </div>
-          </div>
-        </div>
-
-        <div className="overflow-x-auto">
-          <table className="w-full">
-            <thead className="bg-slate-50/80">
-              <tr>
-                <th className="px-6 py-4 text-left text-xs font-semibold text-slate-600 uppercase tracking-wider">Article</th>
-                <th className="px-6 py-4 text-left text-xs font-semibold text-slate-600 uppercase tracking-wider">Catégorie</th>
-                <th className="px-6 py-4 text-left text-xs font-semibold text-slate-600 uppercase tracking-wider">Acheteur</th>
-                <th className="px-6 py-4 text-left text-xs font-semibold text-slate-600 uppercase tracking-wider">Prix</th>
-                <th className="px-6 py-4 text-left text-xs font-semibold text-slate-600 uppercase tracking-wider">Marge</th>
-                <th className="px-6 py-4 text-left text-xs font-semibold text-slate-600 uppercase tracking-wider">Date</th>
-                <th className="px-6 py-4 text-left text-xs font-semibold text-slate-600 uppercase tracking-wider">Statut</th>
-                <th className="px-6 py-4 text-left text-xs font-semibold text-slate-600 uppercase tracking-wider">Actions</th>
-              </tr>
-            </thead>
-            <tbody className="bg-white divide-y divide-slate-100">
-              {ventesPage.length === 0 ? (
-                <tr>
-                  <td colSpan={8} className="text-center py-12">
-                    <div className="flex flex-col items-center gap-3">
-                      <Package className="w-12 h-12 text-slate-300" />
-                      <p className="text-slate-500 text-lg">Aucune vente trouvée</p>
-                      <p className="text-slate-400 text-sm">Essayez d'ajuster vos filtres ou d'ajouter une nouvelle vente</p>
-                    </div>
-                  </td>
-                </tr>
-              ) : (
-                ventesPage.map((vente, index) => (
-                  <tr
-                    key={vente.id}
-                    className="hover:bg-slate-50/50 transition-colors duration-150 group"
-                    style={{ animationDelay: `${index * 50}ms` }}
-                  >
-                    <td className="px-6 py-4">
-                      <div className="flex items-center">
-                        <div className="w-10 h-10 bg-gradient-to-br from-indigo-100 to-purple-100 rounded-lg flex items-center justify-center mr-3">
-                          <Package className="w-5 h-5 text-indigo-600" />
-                        </div>
-                        <div>
-                          <div className="text-sm font-medium text-slate-900">{vente.article}</div>
-                          <div className="text-xs text-slate-500">ID: {vente.id}</div>
-                        </div>
-                      </div>
-                    </td>
-                    <td className="px-6 py-4">
-                      <span className="inline-flex px-3 py-1 text-xs font-semibold rounded-full bg-blue-100 text-blue-800">
-                        {vente.categorie}
-                      </span>
-                    </td>
-                    <td className="px-6 py-4">
-                      <div className="flex items-center">
-                        <div className="w-8 h-8 bg-gradient-to-br from-green-100 to-emerald-100 rounded-full flex items-center justify-center mr-2">
-                          <Users className="w-4 h-4 text-green-600" />
-                        </div>
-                        <span className="text-sm text-slate-900">{vente.acheteur}</span>
-                      </div>
-                    </td>
-                    <td className="px-6 py-4">
-                      <div className="text-sm font-semibold text-slate-900">{vente.prix}€</div>
-                      <div className="text-xs text-slate-500">Coût: {vente.cout}€</div>
-                    </td>
-                    <td className="px-6 py-4">
-                      <div className="flex items-center gap-2">
-                        <div className="text-sm font-semibold text-green-600">{vente.marge}€</div>
-                        <div className="text-xs bg-green-100 text-green-700 px-2 py-1 rounded-full">
-                          {vente.margePourcent.toFixed(1)}%
-                        </div>
-                      </div>
-                    </td>
-                    <td className="px-6 py-4 text-sm text-slate-600">{vente.date}</td>
-                    <td className="px-6 py-4">
-                      <StatusBadge statut={vente.statut} />
-                    </td>
-                    <td className="px-6 py-4">
-                      <div className="flex items-center gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
-                        <button className="p-1 text-slate-400 hover:text-blue-600 transition-colors">
-                          <Eye className="w-4 h-4" />
-                        </button>
-                        <button className="p-1 text-slate-400 hover:text-green-600 transition-colors">
-                          <Edit className="w-4 h-4" />
-                        </button>
-                        <button className="p-1 text-slate-400 hover:text-red-600 transition-colors">
-                          <Trash2 className="w-4 h-4" />
-                        </button>
-                      </div>
-                    </td>
-                  </tr>
-                ))
-              )}
-            </tbody>
-          </table>
-        </div>
-
-        {/* Pagination modernisée */}
-        {totalPages > 1 && (
-          <div className="px-6 py-4 border-t border-slate-200 bg-slate-50/50">
-            <div className="flex items-center justify-between">
-              <div className="text-sm text-slate-600">
-                Affichage de {indexDebut + 1} à {Math.min(indexFin, ventesFiltrees.length)} sur {ventesFiltrees.length} résultats
+          
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+            {/* Graphique d'évolution des ventes */}
+            <div className="bg-white/80 backdrop-blur-sm rounded-2xl border border-slate-200 p-6 shadow-sm hover:shadow-lg hover:scale-[1.01] transition-all duration-300">
+              <div className="h-80">
+                <Line data={donneesGraphiques.evolutionVentes} options={optionsEvolution} />
               </div>
-              <div className="flex items-center gap-2">
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => setPageCourante(pageCourante - 1)}
-                  disabled={pageCourante === 1}
-                  className="bg-white/50 border-slate-200 hover:bg-white"
-                >
-                  Précédent
-                </Button>
-                <span className="text-sm text-slate-700 px-3 py-1 bg-white rounded-lg border border-slate-200">
-                  Page {pageCourante} sur {totalPages}
-                </span>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => setPageCourante(pageCourante + 1)}
-                  disabled={pageCourante === totalPages}
-                  className="bg-white/50 border-slate-200 hover:bg-white"
-                >
-                  Suivant
-                </Button>
+            </div>
+
+            {/* Graphique de répartition par catégorie */}
+            <div className="bg-white/80 backdrop-blur-sm rounded-2xl border border-slate-200 p-6 shadow-sm hover:shadow-lg hover:scale-[1.01] transition-all duration-300">
+              <div className="h-80">
+                <Doughnut data={donneesGraphiques.repartitionCategories} options={optionsRepartition} />
+              </div>
+            </div>
+
+            {/* Graphique de performance des marges */}
+            <div className="bg-white/80 backdrop-blur-sm rounded-2xl border border-slate-200 p-6 shadow-sm hover:shadow-lg hover:scale-[1.01] transition-all duration-300 lg:col-span-2">
+              <div className="h-80">
+                <Bar data={donneesGraphiques.performanceMarges} options={optionsPerformance} />
               </div>
             </div>
           </div>
-        )}
-      </div>
+        </motion.div>
 
-      {/* Modal Nouvelle Vente modernisé */}
-      {modalOuvert && (
-        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-2xl p-8 w-full max-w-md mx-4 animate-fade-in shadow-2xl">
-            <div className="flex items-center justify-between mb-6">
-              <div className="flex items-center gap-3">
-                <div className="w-10 h-10 bg-gradient-to-br from-indigo-100 to-purple-100 rounded-lg flex items-center justify-center">
-                  <Plus className="w-5 h-5 text-indigo-600" />
-                </div>
-                <h2 className="text-xl font-semibold text-slate-800">Nouvelle vente</h2>
+        {/* Section filtres avec style Dashboard */}
+        <motion.div
+          initial={{ opacity: 0, y: 24 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.3, duration: 0.5, ease: "easeOut" }}
+          className="bg-white/80 backdrop-blur-sm rounded-2xl border border-slate-200 p-6 mb-8 shadow-sm hover:shadow-lg hover:scale-[1.01] transition-all duration-300"
+        >
+          <div className="flex items-center justify-between mb-4">
+            <div className="flex items-center gap-3">
+              <div className="w-8 h-8 bg-gradient-to-br from-slate-100 to-slate-200 rounded-lg flex items-center justify-center group-hover:shadow-md transition-all duration-200">
+                <Filter className="w-4 h-4 text-slate-600 group-hover:scale-110 transition-transform duration-200" />
               </div>
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={() => setModalOuvert(false)}
-                className="text-slate-400 hover:text-slate-600"
-              >
-                <X className="w-5 h-5" />
-              </Button>
-            </div>
-
-            <div className="space-y-6">
-              {/* Article */}
               <div>
-                <label className="block text-sm font-medium text-slate-700 mb-2">Article *</label>
-                <Input
-                  value={nouvelleVente.article}
-                  onChange={(e) => setNouvelleVente({...nouvelleVente, article: e.target.value})}
-                  placeholder="Nom de l'article"
-                  className={`bg-slate-50 border-slate-200 focus:border-indigo-500 focus:ring-indigo-500 ${erreurs.article ? "border-red-500" : ""}`}
-                />
-                {erreurs.article && (
-                  <div className="flex items-center gap-1 mt-1 text-red-600 text-sm">
-                    <AlertCircle className="w-4 h-4" />
-                    {erreurs.article}
-                  </div>
-                )}
-              </div>
-
-              {/* Catégorie et Acheteur */}
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-sm font-medium text-slate-700 mb-2">Catégorie</label>
-                  <select
-                    value={nouvelleVente.categorie}
-                    onChange={(e) => setNouvelleVente({...nouvelleVente, categorie: e.target.value})}
-                    className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
-                  >
-                    {categories.slice(1).map((cat) => (
-                      <option key={cat} value={cat}>{cat}</option>
-                    ))}
-                  </select>
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-slate-700 mb-2">Acheteur *</label>
-                  <Input
-                    value={nouvelleVente.acheteur}
-                    onChange={(e) => setNouvelleVente({...nouvelleVente, acheteur: e.target.value})}
-                    placeholder="Nom de l'acheteur"
-                    className={`bg-slate-50 border-slate-200 focus:border-indigo-500 focus:ring-indigo-500 ${erreurs.acheteur ? "border-red-500" : ""}`}
-                  />
-                  {erreurs.acheteur && (
-                    <div className="flex items-center gap-1 mt-1 text-red-600 text-sm">
-                      <AlertCircle className="w-4 h-4" />
-                      {erreurs.acheteur}
-                    </div>
-                  )}
-                </div>
-              </div>
-
-              {/* Prix et Coût */}
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-sm font-medium text-slate-700 mb-2">Prix (€) *</label>
-                  <Input
-                    type="number"
-                    value={nouvelleVente.prix}
-                    onChange={(e) => setNouvelleVente({...nouvelleVente, prix: e.target.value})}
-                    placeholder="0.00"
-                    className={`bg-slate-50 border-slate-200 focus:border-indigo-500 focus:ring-indigo-500 ${erreurs.prix ? "border-red-500" : ""}`}
-                  />
-                  {erreurs.prix && (
-                    <div className="flex items-center gap-1 mt-1 text-red-600 text-sm">
-                      <AlertCircle className="w-4 h-4" />
-                      {erreurs.prix}
-                    </div>
-                  )}
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-slate-700 mb-2">Coût (€)</label>
-                  <Input
-                    type="number"
-                    value={nouvelleVente.cout}
-                    onChange={(e) => setNouvelleVente({...nouvelleVente, cout: e.target.value})}
-                    placeholder="0.00"
-                    className={`bg-slate-50 border-slate-200 focus:border-indigo-500 focus:ring-indigo-500 ${erreurs.cout ? "border-red-500" : ""}`}
-                  />
-                  {erreurs.cout && (
-                    <div className="flex items-center gap-1 mt-1 text-red-600 text-sm">
-                      <AlertCircle className="w-4 h-4" />
-                      {erreurs.cout}
-                    </div>
-                  )}
-                </div>
-              </div>
-
-              {/* Date et Statut */}
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-sm font-medium text-slate-700 mb-2">Date</label>
-                  <Input
-                    type="date"
-                    value={nouvelleVente.date}
-                    onChange={(e) => setNouvelleVente({...nouvelleVente, date: e.target.value})}
-                    className="bg-slate-50 border-slate-200 focus:border-indigo-500 focus:ring-indigo-500"
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-slate-700 mb-2">Statut</label>
-                  <select
-                    value={nouvelleVente.statut}
-                    onChange={(e) => setNouvelleVente({...nouvelleVente, statut: e.target.value as "En cours" | "Expédié" | "Livré"})}
-                    className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
-                  >
-                    {statuts.slice(1).map((stat) => (
-                      <option key={stat} value={stat}>{stat}</option>
-                    ))}
-                  </select>
-                </div>
+                <h2 className="font-semibold text-slate-800 text-lg group-hover:text-slate-900 transition-colors duration-200">Filtres et recherche</h2>
+                <p className="text-slate-500 text-sm group-hover:text-slate-600 transition-colors duration-200">Affinez vos résultats</p>
               </div>
             </div>
-
-            <div className="flex gap-3 mt-8">
-              <Button
-                variant="outline"
-                onClick={() => setModalOuvert(false)}
-                className="flex-1 bg-slate-50 border-slate-200 hover:bg-slate-100"
+            <div className="flex items-center gap-3">
+              <Button 
+                variant="outline" 
+                size="sm" 
+                onClick={reinitialiserFiltres}
+                className="text-slate-600 hover:text-slate-800 hover:scale-105 transition-all duration-200"
               >
-                Annuler
+                Réinitialiser
               </Button>
-              <Button
-                onClick={ajouterVente}
-                className="flex-1 bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 text-white"
+              <Button 
+                variant="outline" 
+                size="sm" 
+                onClick={() => setFiltresOuverts(!filtresOuverts)}
+                className="flex items-center gap-2 hover:scale-105 transition-all duration-200"
               >
-                Ajouter la vente
+                {filtresOuverts ? "Masquer" : "Afficher"} les filtres
+                <ChevronDown className={`w-4 h-4 transition-transform ${filtresOuverts ? 'rotate-180' : ''}`} />
               </Button>
             </div>
           </div>
-        </div>
-      )}
-    </div>
+
+          {/* Barre de recherche principale */}
+          <div className="relative mb-4">
+            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-slate-400 w-5 h-5" />
+            <Input
+              placeholder="Rechercher par article ou acheteur..."
+              value={recherche}
+              onChange={(e) => setRecherche(e.target.value)}
+              className="pl-10 bg-white/50 border-slate-200 focus:border-indigo-500 focus:ring-indigo-500"
+            />
+          </div>
+
+          {/* Filtres avancés */}
+          {filtresOuverts && (
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 pt-4 border-t border-slate-200">
+              <div>
+                <label className="block text-sm font-medium text-slate-700 mb-2">Catégorie</label>
+                <select
+                  value={filtreCategorie}
+                  onChange={(e) => setFiltreCategorie(e.target.value)}
+                  className="w-full px-3 py-2 bg-white/50 border border-slate-200 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
+                >
+                  {categories.map((cat) => (
+                    <option key={cat} value={cat}>{cat}</option>
+                  ))}
+                </select>
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-slate-700 mb-2">Statut</label>
+                <select
+                  value={filtreStatut}
+                  onChange={(e) => setFiltreStatut(e.target.value)}
+                  className="w-full px-3 py-2 bg-white/50 border border-slate-200 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
+                >
+                  {statuts.map((stat) => (
+                    <option key={stat} value={stat}>{stat}</option>
+                  ))}
+                </select>
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-slate-700 mb-2">Prix min (€)</label>
+                <Input
+                  type="number"
+                  placeholder="0"
+                  value={prixMin}
+                  onChange={(e) => setPrixMin(e.target.value)}
+                  className="bg-white/50 border-slate-200 focus:border-indigo-500 focus:ring-indigo-500"
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-slate-700 mb-2">Prix max (€)</label>
+                <Input
+                  type="number"
+                  placeholder="1000"
+                  value={prixMax}
+                  onChange={(e) => setPrixMax(e.target.value)}
+                  className="bg-white/50 border-slate-200 focus:border-indigo-500 focus:ring-indigo-500"
+                />
+              </div>
+            </div>
+          )}
+        </motion.div>
+
+        {/* Tableau avec style Dashboard */}
+        <motion.div
+          initial={{ opacity: 0, y: 24 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.4, duration: 0.5, ease: "easeOut" }}
+          className="bg-white/80 backdrop-blur-sm rounded-2xl border border-slate-200 overflow-hidden shadow-sm hover:shadow-lg hover:scale-[1.01] transition-all duration-300"
+        >
+          <div className="p-6 border-b border-slate-200">
+            <div className="flex items-center justify-between">
+              <h3 className="text-lg font-semibold text-slate-800">Liste des ventes</h3>
+              <div className="flex items-center gap-2">
+                <span className="text-sm text-slate-600">Lignes par page:</span>
+                <select
+                  value={elementsParPage}
+                  onChange={(e) => {
+                    setElementsParPage(parseInt(e.target.value));
+                    setPageCourante(1);
+                  }}
+                  className="px-2 py-1 bg-white/50 border border-slate-200 rounded text-sm focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
+                >
+                  <option value={5}>5</option>
+                  <option value={10}>10</option>
+                  <option value={20}>20</option>
+                  <option value={50}>50</option>
+                </select>
+              </div>
+            </div>
+          </div>
+
+          <div className="overflow-x-auto">
+            <table className="w-full">
+              <thead className="bg-slate-50/80">
+                <tr>
+                  <th className="px-6 py-4 text-left text-xs font-semibold text-slate-600 uppercase tracking-wider">Article</th>
+                  <th className="px-6 py-4 text-left text-xs font-semibold text-slate-600 uppercase tracking-wider">Catégorie</th>
+                  <th className="px-6 py-4 text-left text-xs font-semibold text-slate-600 uppercase tracking-wider">Acheteur</th>
+                  <th className="px-6 py-4 text-left text-xs font-semibold text-slate-600 uppercase tracking-wider">Prix</th>
+                  <th className="px-6 py-4 text-left text-xs font-semibold text-slate-600 uppercase tracking-wider">Marge</th>
+                  <th className="px-6 py-4 text-left text-xs font-semibold text-slate-600 uppercase tracking-wider">Date</th>
+                  <th className="px-6 py-4 text-left text-xs font-semibold text-slate-600 uppercase tracking-wider">Statut</th>
+                  <th className="px-6 py-4 text-left text-xs font-semibold text-slate-600 uppercase tracking-wider">Actions</th>
+                </tr>
+              </thead>
+              <tbody className="bg-white divide-y divide-slate-100">
+                {ventesPage.length === 0 ? (
+                  <motion.tr
+                    initial={{ opacity: 0, scale: 0.9 }}
+                    animate={{ opacity: 1, scale: 1 }}
+                    transition={{ duration: 0.5, ease: "easeOut" }}
+                  >
+                    <td colSpan={8} className="text-center py-12">
+                      <div className="flex flex-col items-center gap-3">
+                        <motion.div
+                          initial={{ scale: 0 }}
+                          animate={{ scale: 1 }}
+                          transition={{ delay: 0.2, duration: 0.5, ease: "easeOut" }}
+                        >
+                          <Package className="w-12 h-12 text-slate-300" />
+                        </motion.div>
+                        <motion.p
+                          initial={{ opacity: 0, y: 10 }}
+                          animate={{ opacity: 1, y: 0 }}
+                          transition={{ delay: 0.4, duration: 0.5, ease: "easeOut" }}
+                          className="text-slate-500 text-lg"
+                        >
+                          Aucune vente trouvée
+                        </motion.p>
+                        <motion.p
+                          initial={{ opacity: 0, y: 10 }}
+                          animate={{ opacity: 1, y: 0 }}
+                          transition={{ delay: 0.6, duration: 0.5, ease: "easeOut" }}
+                          className="text-slate-400 text-sm"
+                        >
+                          Essayez d'ajuster vos filtres ou d'ajouter une nouvelle vente
+                        </motion.p>
+                      </div>
+                    </td>
+                  </motion.tr>
+                ) : (
+                  ventesPage.map((vente, index) => (
+                    <motion.tr
+                      key={vente.id}
+                      initial={{ opacity: 0, x: -20, scale: 0.95 }}
+                      animate={{ opacity: 1, x: 0, scale: 1 }}
+                      transition={{ 
+                        delay: index * 0.1, 
+                        duration: 0.5, 
+                        ease: "easeOut" 
+                      }}
+                      whileHover={{ 
+                        scale: 1.02,
+                        backgroundColor: "rgba(99, 102, 241, 0.02)",
+                        transition: { duration: 0.2 }
+                      }}
+                      className="group relative overflow-hidden"
+                    >
+                      {/* Effet de shimmer au hover */}
+                      <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent -translate-x-full group-hover:translate-x-full transition-transform duration-700 ease-out opacity-0 group-hover:opacity-100"></div>
+                      
+                      <td className="px-6 py-4 relative z-10">
+                        <motion.div 
+                          className="flex items-center"
+                          whileHover={{ scale: 1.05 }}
+                          transition={{ duration: 0.2 }}
+                        >
+                          <motion.div 
+                            className="w-10 h-10 bg-gradient-to-br from-indigo-100 to-purple-100 rounded-lg flex items-center justify-center mr-3"
+                            whileHover={{ rotate: 5, scale: 1.1 }}
+                            transition={{ duration: 0.2 }}
+                          >
+                            <Package className="w-5 h-5 text-indigo-600" />
+                          </motion.div>
+                          <div>
+                            <div className="text-sm font-medium text-slate-900">{vente.article}</div>
+                            <div className="text-xs text-slate-500">ID: {vente.id}</div>
+                          </div>
+                        </motion.div>
+                      </td>
+                      <td className="px-6 py-4 relative z-10">
+                        <motion.span 
+                          className="inline-flex px-3 py-1 text-xs font-semibold rounded-full bg-blue-100 text-blue-800"
+                          whileHover={{ scale: 1.1, rotate: 2 }}
+                          transition={{ duration: 0.2 }}
+                        >
+                          {vente.categorie}
+                        </motion.span>
+                      </td>
+                      <td className="px-6 py-4 relative z-10">
+                        <motion.div 
+                          className="flex items-center"
+                          whileHover={{ scale: 1.05 }}
+                          transition={{ duration: 0.2 }}
+                        >
+                          <motion.div 
+                            className="w-8 h-8 bg-gradient-to-br from-green-100 to-emerald-100 rounded-full flex items-center justify-center mr-2"
+                            whileHover={{ rotate: -5, scale: 1.1 }}
+                            transition={{ duration: 0.2 }}
+                          >
+                            <Users className="w-4 h-4 text-green-600" />
+                          </motion.div>
+                          <span className="text-sm text-slate-900">{vente.acheteur}</span>
+                        </motion.div>
+                      </td>
+                      <td className="px-6 py-4 relative z-10">
+                        <motion.div 
+                          className="text-sm font-semibold text-slate-900"
+                          whileHover={{ scale: 1.05 }}
+                          transition={{ duration: 0.2 }}
+                        >
+                          {vente.prix}€
+                        </motion.div>
+                        <div className="text-xs text-slate-500">Coût: {vente.cout}€</div>
+                      </td>
+                      <td className="px-6 py-4 relative z-10">
+                        <motion.div 
+                          className="flex items-center gap-2"
+                          whileHover={{ scale: 1.05 }}
+                          transition={{ duration: 0.2 }}
+                        >
+                          <div className="text-sm font-semibold text-green-600">{vente.marge}€</div>
+                          <motion.div 
+                            className="text-xs bg-green-100 text-green-700 px-2 py-1 rounded-full"
+                            whileHover={{ scale: 1.1, rotate: 2 }}
+                            transition={{ duration: 0.2 }}
+                          >
+                            {vente.margePourcent.toFixed(1)}%
+                          </motion.div>
+                        </motion.div>
+                      </td>
+                      <td className="px-6 py-4 text-sm text-slate-600 relative z-10">{vente.date}</td>
+                      <td className="px-6 py-4 relative z-10">
+                        <motion.div
+                          whileHover={{ scale: 1.1 }}
+                          transition={{ duration: 0.2 }}
+                        >
+                          <StatusBadge statut={vente.statut} />
+                        </motion.div>
+                      </td>
+                      <td className="px-6 py-4 relative z-10">
+                        <motion.div 
+                          className="flex items-center gap-2 opacity-0 group-hover:opacity-100 transition-opacity duration-300"
+                          initial={{ opacity: 0, x: 10 }}
+                          whileHover={{ opacity: 1, x: 0 }}
+                          transition={{ duration: 0.3 }}
+                        >
+                          <motion.button 
+                            className="p-2 text-slate-400 hover:text-blue-600 transition-colors rounded-lg hover:bg-blue-50"
+                            whileHover={{ scale: 1.2, rotate: 5 }}
+                            whileTap={{ scale: 0.9 }}
+                            transition={{ duration: 0.2 }}
+                          >
+                            <Eye className="w-4 h-4" />
+                          </motion.button>
+                          <motion.button 
+                            className="p-2 text-slate-400 hover:text-green-600 transition-colors rounded-lg hover:bg-green-50"
+                            whileHover={{ scale: 1.2, rotate: -5 }}
+                            whileTap={{ scale: 0.9 }}
+                            transition={{ duration: 0.2 }}
+                          >
+                            <Edit className="w-4 h-4" />
+                          </motion.button>
+                          <motion.button 
+                            className="p-2 text-slate-400 hover:text-red-600 transition-colors rounded-lg hover:bg-red-50"
+                            whileHover={{ scale: 1.2, rotate: 5 }}
+                            whileTap={{ scale: 0.9 }}
+                            transition={{ duration: 0.2 }}
+                          >
+                            <Trash2 className="w-4 h-4" />
+                          </motion.button>
+                        </motion.div>
+                      </td>
+                    </motion.tr>
+                  ))
+                )}
+              </tbody>
+            </table>
+          </div>
+
+          {/* Pagination modernisée */}
+          {totalPages > 1 && (
+            <motion.div
+              initial={{ opacity: 0, y: 24 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.5, duration: 0.5, ease: "easeOut" }}
+              className="px-6 py-4 border-t border-slate-200 bg-slate-50/50"
+            >
+              <div className="flex items-center justify-between">
+                <div className="text-sm text-slate-600">
+                  Affichage de {indexDebut + 1} à {Math.min(indexFin, ventesFiltrees.length)} sur {ventesFiltrees.length} résultats
+                </div>
+                <div className="flex items-center gap-2">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => setPageCourante(pageCourante - 1)}
+                    disabled={pageCourante === 1}
+                    className="bg-white/50 border-slate-200 hover:bg-white"
+                  >
+                    Précédent
+                  </Button>
+                  <span className="text-sm text-slate-700 px-3 py-1 bg-white rounded-lg border border-slate-200">
+                    Page {pageCourante} sur {totalPages}
+                  </span>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => setPageCourante(pageCourante + 1)}
+                    disabled={pageCourante === totalPages}
+                    className="bg-white/50 border-slate-200 hover:bg-white"
+                  >
+                    Suivant
+                  </Button>
+                </div>
+              </div>
+            </motion.div>
+          )}
+        </motion.div>
+
+        {/* Modal Nouvelle Vente modernisé */}
+        <AnimatePresence>
+          {modalOuvert && (
+            <motion.div
+              initial={{ scale: 0.9, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              exit={{ scale: 0.9, opacity: 0 }}
+              transition={{ duration: 0.3, ease: "easeOut" }}
+              className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4"
+              onClick={() => setModalOuvert(false)}
+            >
+              <motion.div
+                initial={{ scale: 0.9, opacity: 0 }}
+                animate={{ scale: 1, opacity: 1 }}
+                exit={{ scale: 0.9, opacity: 0 }}
+                transition={{ duration: 0.3, ease: "easeOut" }}
+                className="bg-white rounded-2xl p-6 w-full max-w-md shadow-2xl"
+                onClick={(e) => e.stopPropagation()}
+              >
+                <div className="flex items-center justify-between mb-6">
+                  <div className="flex items-center gap-3">
+                    <div className="w-10 h-10 bg-gradient-to-br from-indigo-100 to-purple-100 rounded-lg flex items-center justify-center">
+                      <Plus className="w-5 h-5 text-indigo-600" />
+                    </div>
+                    <h2 className="text-xl font-semibold text-slate-800">Nouvelle vente</h2>
+                  </div>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => setModalOuvert(false)}
+                    className="text-slate-400 hover:text-slate-600"
+                  >
+                    <X className="w-5 h-5" />
+                  </Button>
+                </div>
+
+                <div className="space-y-6">
+                  {/* Article */}
+                  <div>
+                    <label className="block text-sm font-medium text-slate-700 mb-2">Article *</label>
+                    <Input
+                      value={nouvelleVente.article}
+                      onChange={(e) => setNouvelleVente({...nouvelleVente, article: e.target.value})}
+                      placeholder="Nom de l'article"
+                      className={`bg-slate-50 border-slate-200 focus:border-indigo-500 focus:ring-indigo-500 ${erreurs.article ? "border-red-500" : ""}`}
+                    />
+                    {erreurs.article && (
+                      <div className="flex items-center gap-1 mt-1 text-red-600 text-sm">
+                        <AlertCircle className="w-4 h-4" />
+                        {erreurs.article}
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Catégorie et Acheteur */}
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <label className="block text-sm font-medium text-slate-700 mb-2">Catégorie</label>
+                      <select
+                        value={nouvelleVente.categorie}
+                        onChange={(e) => setNouvelleVente({...nouvelleVente, categorie: e.target.value})}
+                        className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
+                      >
+                        {categories.slice(1).map((cat) => (
+                          <option key={cat} value={cat}>{cat}</option>
+                        ))}
+                      </select>
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-slate-700 mb-2">Acheteur *</label>
+                      <Input
+                        value={nouvelleVente.acheteur}
+                        onChange={(e) => setNouvelleVente({...nouvelleVente, acheteur: e.target.value})}
+                        placeholder="Nom de l'acheteur"
+                        className={`bg-slate-50 border-slate-200 focus:border-indigo-500 focus:ring-indigo-500 ${erreurs.acheteur ? "border-red-500" : ""}`}
+                      />
+                      {erreurs.acheteur && (
+                        <div className="flex items-center gap-1 mt-1 text-red-600 text-sm">
+                          <AlertCircle className="w-4 h-4" />
+                          {erreurs.acheteur}
+                        </div>
+                      )}
+                    </div>
+                  </div>
+
+                  {/* Prix et Coût */}
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <label className="block text-sm font-medium text-slate-700 mb-2">Prix (€) *</label>
+                      <Input
+                        type="number"
+                        value={nouvelleVente.prix}
+                        onChange={(e) => setNouvelleVente({...nouvelleVente, prix: e.target.value})}
+                        placeholder="0.00"
+                        className={`bg-slate-50 border-slate-200 focus:border-indigo-500 focus:ring-indigo-500 ${erreurs.prix ? "border-red-500" : ""}`}
+                      />
+                      {erreurs.prix && (
+                        <div className="flex items-center gap-1 mt-1 text-red-600 text-sm">
+                          <AlertCircle className="w-4 h-4" />
+                          {erreurs.prix}
+                        </div>
+                      )}
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-slate-700 mb-2">Coût (€)</label>
+                      <Input
+                        type="number"
+                        value={nouvelleVente.cout}
+                        onChange={(e) => setNouvelleVente({...nouvelleVente, cout: e.target.value})}
+                        placeholder="0.00"
+                        className={`bg-slate-50 border-slate-200 focus:border-indigo-500 focus:ring-indigo-500 ${erreurs.cout ? "border-red-500" : ""}`}
+                      />
+                      {erreurs.cout && (
+                        <div className="flex items-center gap-1 mt-1 text-red-600 text-sm">
+                          <AlertCircle className="w-4 h-4" />
+                          {erreurs.cout}
+                        </div>
+                      )}
+                    </div>
+                  </div>
+
+                  {/* Date et Statut */}
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <label className="block text-sm font-medium text-slate-700 mb-2">Date</label>
+                      <Input
+                        type="date"
+                        value={nouvelleVente.date}
+                        onChange={(e) => setNouvelleVente({...nouvelleVente, date: e.target.value})}
+                        className="bg-slate-50 border-slate-200 focus:border-indigo-500 focus:ring-indigo-500"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-slate-700 mb-2">Statut</label>
+                      <select
+                        value={nouvelleVente.statut}
+                        onChange={(e) => setNouvelleVente({...nouvelleVente, statut: e.target.value as "En cours" | "Expédié" | "Livré"})}
+                        className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
+                      >
+                        {statuts.slice(1).map((stat) => (
+                          <option key={stat} value={stat}>{stat}</option>
+                        ))}
+                      </select>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="flex gap-3 mt-8">
+                  <Button
+                    variant="outline"
+                    onClick={() => setModalOuvert(false)}
+                    className="flex-1 bg-slate-50 border-slate-200 hover:bg-slate-100"
+                  >
+                    Annuler
+                  </Button>
+                  <Button
+                    onClick={ajouterVente}
+                    className="flex-1 bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 text-white"
+                  >
+                    Ajouter la vente
+                  </Button>
+                </div>
+              </motion.div>
+            </motion.div>
+          )}
+        </AnimatePresence>
+      </motion.div>
+    </AnimatePresence>
   );
 }
 
@@ -885,50 +1063,79 @@ function StatCard({ title, value, subtitle, icon, color, trend }: {
   color: string,
   trend: string
 }) {
-  const colorMap: any = {
-    blue: "from-blue-500 to-blue-600",
-    green: "from-green-500 to-green-600", 
-    purple: "from-purple-500 to-purple-600",
-    orange: "from-orange-500 to-orange-600",
+  const isPositive = trend.startsWith('+');
+  const colorClasses = {
+    blue: 'bg-gradient-to-br from-blue-500 to-blue-600',
+    green: 'bg-gradient-to-br from-green-500 to-green-600',
+    purple: 'bg-gradient-to-br from-purple-500 to-purple-600',
+    orange: 'bg-gradient-to-br from-orange-500 to-orange-600',
   };
-  
+
   return (
-    <div className="bg-white/80 backdrop-blur-sm rounded-2xl p-6 border border-slate-200 shadow-sm hover:shadow-md transition-all duration-200 group">
-      <div className="flex items-center justify-between mb-4">
-        <div className={`w-12 h-12 bg-gradient-to-br ${colorMap[color]} rounded-xl flex items-center justify-center text-white shadow-lg`}>
-          {icon}
+    <div className={`${colorClasses[color as keyof typeof colorClasses]} rounded-2xl p-6 text-white shadow-lg hover:shadow-xl hover:scale-105 transition-all duration-300 cursor-pointer group relative overflow-hidden`}>
+      {/* Effet de brillance au hover */}
+      <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/10 to-transparent -translate-x-full group-hover:translate-x-full transition-transform duration-700 ease-out"></div>
+      
+      <div className="relative z-10">
+        <div className="flex items-center justify-between mb-4">
+          <div className="p-3 bg-white/20 rounded-xl group-hover:bg-white/30 transition-all duration-200">
+            {React.cloneElement(icon as React.ReactElement, { 
+              className: 'w-6 h-6 group-hover:scale-110 transition-transform duration-200' 
+            })}
+          </div>
+          <div className="flex items-center gap-1 text-sm">
+            {isPositive ? (
+              <ArrowUpRight className="w-4 h-4 group-hover:scale-110 transition-transform duration-200" />
+            ) : (
+              <ArrowDownRight className="w-4 h-4 group-hover:scale-110 transition-transform duration-200" />
+            )}
+            <span className="font-semibold group-hover:scale-110 transition-transform duration-200">{trend}</span>
+          </div>
         </div>
-        <div className="text-right">
-          <span className="text-xs font-medium text-green-600 bg-green-100 px-2 py-1 rounded-full">
-            {trend}
-          </span>
+        <div className="mb-2">
+          <h3 className="text-lg font-semibold group-hover:scale-105 transition-transform duration-200">{title}</h3>
+          <p className="text-2xl font-bold group-hover:scale-105 transition-transform duration-200">{value}</p>
         </div>
-      </div>
-      <div>
-        <p className="text-sm font-medium text-slate-600 mb-1">{title}</p>
-        <p className="text-2xl font-bold text-slate-800 mb-1">{value}</p>
-        <p className="text-xs text-slate-500">{subtitle}</p>
+        <p className="text-white/80 text-sm group-hover:text-white transition-colors duration-200">{subtitle}</p>
       </div>
     </div>
   );
 }
 
 function StatusBadge({ statut }: { statut: string }) {
-  const colorMap: any = {
-    "En cours": "bg-yellow-100 text-yellow-800 border border-yellow-300",
-    "Expédié": "bg-blue-100 text-blue-800 border border-blue-300",
-    "Livré": "bg-green-100 text-green-800 border border-green-300",
+  const getStatusConfig = (statut: string) => {
+    switch (statut) {
+      case "En cours":
+        return {
+          bg: "bg-yellow-100 text-yellow-800",
+          icon: <Clock className="w-3 h-3" />,
+          shadow: "0 0 0 6px rgba(253,224,71,0.18)" // jaune glow
+        };
+      case "Expédié":
+        return {
+          bg: "bg-blue-100 text-blue-800",
+          icon: <Truck className="w-3 h-3" />,
+          shadow: "0 0 0 6px rgba(59,130,246,0.18)" // bleu glow
+        };
+      case "Livré":
+        return {
+          bg: "bg-green-100 text-green-800",
+          icon: <Check className="w-3 h-3" />,
+          shadow: "0 0 0 6px rgba(34,197,94,0.18)" // vert glow
+        };
+      default:
+        return {
+          bg: "bg-slate-100 text-slate-600",
+          icon: <AlertCircle className="w-3 h-3" />,
+          shadow: "0 0 0 6px rgba(100,116,139,0.12)" // gris glow
+        };
+    }
   };
-  const iconMap: any = {
-    "En cours": <Clock className="w-3.5 h-3.5 mr-1" />,
-    "Expédié": <Truck className="w-3.5 h-3.5 mr-1" />,
-    "Livré": <Check className="w-3.5 h-3.5 mr-1" />,
-  };
+  const { bg, icon, shadow } = getStatusConfig(statut);
   return (
-    <span
-      className={`inline-flex items-center px-3 py-1 text-xs font-semibold rounded-full gap-1 ${colorMap[statut] || "bg-gray-100 text-gray-800 border border-gray-300"}`}
-    >
-      {iconMap[statut]}
+    <span className={`inline-flex items-center gap-1 px-3 py-1 text-xs font-semibold rounded-full ${bg}`} style={{ boxShadow: shadow }}>
+      <span className="w-2.5 h-2.5 rounded-full" style={{ background: "currentColor", boxShadow: shadow }}></span>
+      {icon}
       {statut}
     </span>
   );
@@ -936,15 +1143,9 @@ function StatusBadge({ statut }: { statut: string }) {
 
 function Toast({ message, type }: { message: string, type: 'success' | 'error' }) {
   return (
-    <div
-      className={`fixed top-6 right-6 z-[100] px-6 py-4 rounded-xl shadow-lg flex items-center gap-3 transition-all animate-fade-in backdrop-blur-sm ${
-        type === 'success' ? 'bg-green-500/90 text-white' : 'bg-red-500/90 text-white'
-      }`}
-      role="alert"
-      aria-live="assertive"
-    >
-      {type === 'success' ? <Check className="w-5 h-5" /> : <AlertCircle className="w-5 h-5" />}
-      <span className="font-medium">{message}</span>
+    <div className={`flex items-center gap-2 px-4 py-2 rounded-lg shadow-md ${type === 'success' ? 'bg-green-50 text-green-800' : 'bg-red-50 text-red-800'}`}>
+      {type === 'success' ? <Check className="w-4 h-4" /> : <AlertCircle className="w-4 h-4" />}
+      <span>{message}</span>
     </div>
   );
 }

@@ -1,7 +1,7 @@
 'use client'
 
 import { Button } from "@/components/ui/button";
-import { BarChart2, Calendar, ChevronDown, ArrowUpRight, ArrowDownRight, AlertTriangle, Star, TrendingUp, DollarSign, Package, Users, Plus, Download, Filter as FilterIcon, Sparkles } from "lucide-react";
+import { BarChart2, Calendar, ChevronDown, ArrowUpRight, ArrowDownRight, AlertTriangle, Star, TrendingUp, DollarSign, Package, Users, Plus, Download, Filter as FilterIcon, Sparkles, X, CalendarDays } from "lucide-react";
 import {
   AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, BarChart, Bar, Cell, Legend
 } from "recharts";
@@ -9,14 +9,32 @@ import React from "react";
 import { useData } from "@/contexts/DataContext";
 import { ventes as ventesData } from "@/data/ventes";
 import { ArticleFormModal, Article } from "@/components/ArticleFormModal";
+import { motion, AnimatePresence } from "framer-motion";
 
-const financialData = [
-  { month: "Jan", ca: 2000, revenus: 1500, marge: 400 },
-  { month: "Fév", ca: 4000, revenus: 3000, marge: 800 },
-  { month: "Mar", ca: 4500, revenus: 3200, marge: 900 },
-  { month: "Avr", ca: 2500, revenus: 2000, marge: 600 },
-  { month: "Mai", ca: 7000, revenus: 5000, marge: 1200 },
-  { month: "Juin", ca: 5000, revenus: 4000, marge: 900 },
+// Types pour les périodes
+type PeriodType = '7j' | '30j' | '3m' | '1a' | 'custom';
+
+interface PeriodFilter {
+  type: PeriodType;
+  label: string;
+  startDate: Date;
+  endDate: Date;
+}
+
+// Données financières complètes (mock)
+const allFinancialData = [
+  { month: "Jan", ca: 2000, revenus: 1500, marge: 400, date: "2024-01-01" },
+  { month: "Fév", ca: 4000, revenus: 3000, marge: 800, date: "2024-02-01" },
+  { month: "Mar", ca: 4500, revenus: 3200, marge: 900, date: "2024-03-01" },
+  { month: "Avr", ca: 2500, revenus: 2000, marge: 600, date: "2024-04-01" },
+  { month: "Mai", ca: 7000, revenus: 5000, marge: 1200, date: "2024-05-01" },
+  { month: "Juin", ca: 5000, revenus: 4000, marge: 900, date: "2024-06-01" },
+  { month: "Juil", ca: 6000, revenus: 4500, marge: 1100, date: "2024-07-01" },
+  { month: "Août", ca: 3500, revenus: 2800, marge: 700, date: "2024-08-01" },
+  { month: "Sep", ca: 5500, revenus: 4200, marge: 1000, date: "2024-09-01" },
+  { month: "Oct", ca: 4800, revenus: 3600, marge: 850, date: "2024-10-01" },
+  { month: "Nov", ca: 5200, revenus: 3900, marge: 950, date: "2024-11-01" },
+  { month: "Déc", ca: 6500, revenus: 4800, marge: 1300, date: "2024-12-01" },
 ];
 
 const topSalesData = [
@@ -51,15 +69,105 @@ export function Dashboard() {
   const { stats } = useData();
   const [modalOpen, setModalOpen] = React.useState(false);
   
-  const totalRevenuNet = financialData.reduce((sum, d) => sum + d.marge, 0);
-  // Exemples de tendances (mock)
-  const tendanceCA = 12.5;
-  const tendanceRevenu = 8.2;
-  const tendanceVentes = -3.1;
-  const tendanceMarge = 2.7;
+  // États pour les filtres de période
+  const [selectedPeriod, setSelectedPeriod] = React.useState<PeriodType>('30j');
+  const [customDateRange, setCustomDateRange] = React.useState({
+    startDate: '',
+    endDate: ''
+  });
+  const [showCustomPicker, setShowCustomPicker] = React.useState(false);
+  
+  // Charger la période sauvegardée depuis localStorage
+  React.useEffect(() => {
+    const savedPeriod = localStorage.getItem('dashboard-period');
+    if (savedPeriod) {
+      setSelectedPeriod(savedPeriod as PeriodType);
+    }
+  }, []);
+
+  // Sauvegarder la période dans localStorage
+  React.useEffect(() => {
+    localStorage.setItem('dashboard-period', selectedPeriod);
+  }, [selectedPeriod]);
+
+  // Calculer les dates selon la période sélectionnée
+  const getPeriodDates = (period: PeriodType): { startDate: Date; endDate: Date } => {
+    const now = new Date();
+    let endDate = new Date(now);
+    let startDate = new Date(now);
+    
+    switch (period) {
+      case '7j':
+        startDate.setDate(now.getDate() - 7);
+        break;
+      case '30j':
+        startDate.setDate(now.getDate() - 30);
+        break;
+      case '3m':
+        startDate.setMonth(now.getMonth() - 3);
+        break;
+      case '1a':
+        startDate.setFullYear(now.getFullYear() - 1);
+        break;
+      case 'custom':
+        if (customDateRange.startDate && customDateRange.endDate) {
+          startDate = new Date(customDateRange.startDate);
+          endDate = new Date(customDateRange.endDate);
+        }
+        break;
+    }
+    
+    return { startDate, endDate };
+  };
+
+  // Filtrer les données selon la période
+  const { startDate, endDate } = getPeriodDates(selectedPeriod);
+  const filteredFinancialData = allFinancialData.filter(item => {
+    const itemDate = new Date(item.date);
+    return itemDate >= startDate && itemDate <= endDate;
+  });
+
+  // Calculer les métriques filtrées
+  const totalRevenuNet = filteredFinancialData.reduce((sum, d) => sum + d.marge, 0);
+  const totalCA = filteredFinancialData.reduce((sum, d) => sum + d.ca, 0);
+  const totalRevenus = filteredFinancialData.reduce((sum, d) => sum + d.revenus, 0);
+  
+  // Calculer les tendances (mock - basé sur la période précédente)
+  const getTendance = (current: number, previous: number): number => {
+    if (previous === 0) return 0;
+    return ((current - previous) / previous) * 100;
+  };
+
+  // Simuler les données de la période précédente pour les tendances
+  const previousPeriodData = allFinancialData.slice(0, Math.max(0, filteredFinancialData.length - 1));
+  const previousCA = previousPeriodData.reduce((sum, d) => sum + d.ca, 0);
+  const previousRevenus = previousPeriodData.reduce((sum, d) => sum + d.revenus, 0);
+  const previousMarge = previousPeriodData.reduce((sum, d) => sum + d.marge, 0);
+
+  const tendanceCA = getTendance(totalCA, previousCA);
+  const tendanceRevenu = getTendance(totalRevenus, previousRevenus);
+  const tendanceVentes = -3.1; // Mock
+  const tendanceMarge = getTendance(totalRevenuNet, previousMarge);
+
   // Résumé rapide (mock)
   const topVente = topSalesData[0];
   const stockCritique = stats.stockFaible + stats.stockRupture;
+
+  // Handler pour changer de période
+  const handlePeriodChange = (period: PeriodType) => {
+    setSelectedPeriod(period);
+    if (period !== 'custom') {
+      setShowCustomPicker(false);
+    }
+  };
+
+  // Handler pour appliquer la période personnalisée
+  const handleCustomPeriodApply = () => {
+    if (customDateRange.startDate && customDateRange.endDate) {
+      setSelectedPeriod('custom');
+      setShowCustomPicker(false);
+    }
+  };
 
   // Handler Export CSV réel des ventes
   function handleExport() {
@@ -93,203 +201,325 @@ export function Dashboard() {
 
   // Handler soumission du formulaire (mock)
   function handleSubmitNouvelleVente(article: Article) {
-    // Ici, on pourrait ajouter à un contexte ou faire un appel API
     console.log('Nouvelle vente ajoutée :', article);
-    // TODO: Ajouter au contexte global ou recharger les données
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-100 p-6">
-      {/* Modal de nouvelle vente */}
-      <ArticleFormModal open={modalOpen} onClose={() => setModalOpen(false)} onSubmit={handleSubmitNouvelleVente} />
-      {/* Header avec titre et actions */}
-      <div className="mb-8">
-        <div className="flex items-center justify-between mb-4">
-          <div>
-            <h1 className="text-4xl font-bold bg-gradient-to-r from-indigo-600 to-purple-600 bg-clip-text text-transparent">
-              Tableau de bord
-            </h1>
-            <p className="text-slate-600 mt-2 text-lg">Vue d'ensemble de vos performances Vinted</p>
+    <AnimatePresence mode="wait">
+      <motion.div
+        key="dashboard-root"
+        initial={{ opacity: 0, y: 32 }}
+        animate={{ opacity: 1, y: 0 }}
+        exit={{ opacity: 0, y: -32 }}
+        transition={{ duration: 0.5, ease: "easeOut" }}
+        className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-100 p-6"
+      >
+        {/* Modal de nouvelle vente */}
+        <ArticleFormModal open={modalOpen} onClose={() => setModalOpen(false)} onSubmit={handleSubmitNouvelleVente} />
+        
+        {/* Header avec titre et actions */}
+        <motion.div
+          initial={{ opacity: 0, y: 24 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.1, duration: 0.5, ease: "easeOut" }}
+          className="mb-8"
+        >
+          <div className="flex items-center justify-between mb-4">
+            <div>
+              <h1 className="text-4xl font-bold bg-gradient-to-r from-indigo-600 to-purple-600 bg-clip-text text-transparent">
+                Tableau de bord
+              </h1>
+              <p className="text-slate-600 mt-2 text-lg">Vue d'ensemble de vos performances Vinted</p>
+            </div>
+            <div className="flex items-center gap-3">
+              <Button 
+                variant="outline" 
+                className="flex items-center gap-2 bg-white/80 backdrop-blur-sm border-slate-200 hover:bg-white transition-all duration-200 hover:scale-105 hover:shadow-lg hover:border-indigo-300"
+                onClick={handleExport}
+              >
+                <Download className="w-4 h-4 group-hover:rotate-12 transition-transform duration-200" />
+                Exporter
+              </Button>
+              <Button 
+                className="flex items-center gap-2 bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 text-white shadow-lg hover:shadow-xl transition-all duration-200 hover:scale-105"
+                onClick={handleNouvelleVente}
+              >
+                <Plus className="w-4 h-4 group-hover:rotate-90 transition-transform duration-200" />
+                Nouvelle vente
+              </Button>
+            </div>
           </div>
-          <div className="flex items-center gap-3">
-            <Button 
-              variant="outline" 
-              className="flex items-center gap-2 bg-white/80 backdrop-blur-sm border-slate-200 hover:bg-white"
-              onClick={handleExport}
+        </motion.div>
+
+        {/* Résumé rapide */}
+        <motion.div
+          initial={{ opacity: 0, y: 24 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.2, duration: 0.5, ease: "easeOut" }}
+          className="bg-white/80 backdrop-blur-sm rounded-2xl border border-slate-200 p-6 mb-8 shadow-sm hover:shadow-lg hover:scale-[1.01] transition-all duration-300"
+        >
+          <div className="flex flex-wrap gap-6 items-center">
+            <div className="flex items-center gap-3 group cursor-pointer hover:scale-105 transition-transform duration-200">
+              <div className="w-10 h-10 bg-gradient-to-br from-yellow-100 to-orange-100 rounded-xl flex items-center justify-center group-hover:shadow-md transition-all duration-200">
+                <Star className="w-5 h-5 text-yellow-600 group-hover:rotate-12 transition-transform duration-200" />
+              </div>
+              <div>
+                <div className="text-slate-600 text-sm group-hover:text-slate-700 transition-colors duration-200">Top vente du mois</div>
+                <div className="font-semibold text-slate-800 group-hover:text-slate-900 transition-colors duration-200">{topVente.name}</div>
+              </div>
+            </div>
+            <div className="flex items-center gap-3 group cursor-pointer hover:scale-105 transition-transform duration-200">
+              <div className="w-10 h-10 bg-gradient-to-br from-red-100 to-pink-100 rounded-xl flex items-center justify-center group-hover:shadow-md transition-all duration-200">
+                <AlertTriangle className="w-5 h-5 text-red-600 group-hover:rotate-12 transition-transform duration-200" />
+              </div>
+              <div>
+                <div className="text-slate-600 text-sm group-hover:text-slate-700 transition-colors duration-200">Stock critique</div>
+                <div className="font-semibold text-slate-800 group-hover:text-slate-900 transition-colors duration-200">{stockCritique} article(s)</div>
+              </div>
+            </div>
+          </div>
+        </motion.div>
+
+        {/* Filtres de période */}
+        <motion.div
+          initial={{ opacity: 0, y: 24 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.3, duration: 0.5, ease: "easeOut" }}
+          className="bg-white/80 backdrop-blur-sm rounded-2xl border border-slate-200 p-6 mb-8 shadow-sm hover:shadow-lg hover:scale-[1.01] transition-all duration-300"
+        >
+          <div className="flex items-center justify-between mb-4">
+            <div className="flex items-center gap-3">
+              <div className="w-8 h-8 bg-gradient-to-br from-indigo-100 to-purple-100 rounded-lg flex items-center justify-center">
+                <Calendar className="w-4 h-4 text-indigo-600" />
+              </div>
+              <div>
+                <h2 className="font-semibold text-slate-800 text-lg">Filtres de période</h2>
+                <p className="text-slate-500 text-sm">Sélectionnez la période d'analyse</p>
+              </div>
+            </div>
+            <div className="text-sm text-slate-600">
+              {startDate.toLocaleDateString('fr-FR')} - {endDate.toLocaleDateString('fr-FR')}
+            </div>
+          </div>
+
+          {/* Boutons de période prédéfinie */}
+          <div className="flex flex-wrap gap-3 mb-4">
+            {[
+              { type: '7j' as PeriodType, label: '7 jours' },
+              { type: '30j' as PeriodType, label: '30 jours' },
+              { type: '3m' as PeriodType, label: '3 mois' },
+              { type: '1a' as PeriodType, label: 'Année' }
+            ].map((period) => (
+              <motion.button
+                key={period.type}
+                onClick={() => handlePeriodChange(period.type)}
+                className={`px-4 py-2 rounded-lg text-sm font-medium transition-all duration-200 hover:scale-105 ${
+                  selectedPeriod === period.type
+                    ? 'bg-gradient-to-r from-indigo-600 to-purple-600 text-white shadow-lg'
+                    : 'bg-slate-100 text-slate-700 hover:bg-slate-200 hover:shadow-md'
+                }`}
+                whileHover={{ scale: 1.05 }}
+                whileTap={{ scale: 0.95 }}
+              >
+                {period.label}
+              </motion.button>
+            ))}
+            
+            {/* Bouton période personnalisée */}
+            <motion.button
+              onClick={() => setShowCustomPicker(!showCustomPicker)}
+              className={`px-4 py-2 rounded-lg text-sm font-medium transition-all duration-200 hover:scale-105 flex items-center gap-2 ${
+                selectedPeriod === 'custom'
+                  ? 'bg-gradient-to-r from-indigo-600 to-purple-600 text-white shadow-lg'
+                  : 'bg-slate-100 text-slate-700 hover:bg-slate-200 hover:shadow-md'
+              }`}
+              whileHover={{ scale: 1.05 }}
+              whileTap={{ scale: 0.95 }}
             >
-              <Download className="w-4 h-4" />
-              Exporter
-            </Button>
-            <Button 
-              className="flex items-center gap-2 bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 text-white shadow-lg hover:shadow-xl transition-all duration-200"
-              onClick={handleNouvelleVente}
-            >
-              <Plus className="w-4 h-4" />
-              Nouvelle vente
-            </Button>
+              <CalendarDays className="w-4 h-4" />
+              Personnalisé
+            </motion.button>
           </div>
-        </div>
-      </div>
 
-      {/* Résumé rapide */}
-      <div className="bg-white/80 backdrop-blur-sm rounded-2xl border border-slate-200 p-6 mb-8 shadow-sm">
-        <div className="flex flex-wrap gap-6 items-center">
-          <div className="flex items-center gap-3">
-            <div className="w-10 h-10 bg-gradient-to-br from-yellow-100 to-orange-100 rounded-xl flex items-center justify-center">
-              <Star className="w-5 h-5 text-yellow-600" />
-            </div>
-            <div>
-              <div className="text-slate-600 text-sm">Top vente du mois</div>
-              <div className="font-semibold text-slate-800">{topVente.name}</div>
-            </div>
-          </div>
-          <div className="flex items-center gap-3">
-            <div className="w-10 h-10 bg-gradient-to-br from-red-100 to-pink-100 rounded-xl flex items-center justify-center">
-              <AlertTriangle className="w-5 h-5 text-red-600" />
-            </div>
-            <div>
-              <div className="text-slate-600 text-sm">Stock critique</div>
-              <div className="font-semibold text-slate-800">{stockCritique} article(s)</div>
-            </div>
-          </div>
-        </div>
-      </div>
+          {/* Sélecteur de période personnalisée */}
+          <AnimatePresence>
+            {showCustomPicker && (
+              <motion.div
+                initial={{ opacity: 0, height: 0 }}
+                animate={{ opacity: 1, height: 'auto' }}
+                exit={{ opacity: 0, height: 0 }}
+                transition={{ duration: 0.3, ease: "easeOut" }}
+                className="border-t border-slate-200 pt-4"
+              >
+                <div className="flex items-center gap-4">
+                  <div className="flex-1">
+                    <label className="block text-sm font-medium text-slate-700 mb-2">Date de début</label>
+                    <input
+                      type="date"
+                      value={customDateRange.startDate}
+                      onChange={(e) => setCustomDateRange(prev => ({ ...prev, startDate: e.target.value }))}
+                      className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
+                    />
+                  </div>
+                  <div className="flex-1">
+                    <label className="block text-sm font-medium text-slate-700 mb-2">Date de fin</label>
+                    <input
+                      type="date"
+                      value={customDateRange.endDate}
+                      onChange={(e) => setCustomDateRange(prev => ({ ...prev, endDate: e.target.value }))}
+                      className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
+                    />
+                  </div>
+                  <div className="flex items-end gap-2">
+                    <Button
+                      onClick={handleCustomPeriodApply}
+                      disabled={!customDateRange.startDate || !customDateRange.endDate}
+                      className="bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 text-white"
+                    >
+                      Appliquer
+                    </Button>
+                    <Button
+                      variant="outline"
+                      onClick={() => setShowCustomPicker(false)}
+                      className="border-slate-200 hover:bg-slate-50"
+                    >
+                      <X className="w-4 h-4" />
+                    </Button>
+                  </div>
+                </div>
+              </motion.div>
+            )}
+          </AnimatePresence>
+        </motion.div>
 
-      {/* Filtres */}
-      <div className="bg-white/80 backdrop-blur-sm rounded-2xl border border-slate-200 p-6 mb-8 shadow-sm">
-        <div className="flex flex-wrap gap-4 items-center">
-          <Filter label="Période" icon={<Calendar className="w-4 h-4 mr-2" />} />
-          <Filter label="Catégorie" />
-          <Filter label="Statut" />
-          <Filter label="Gamme de prix" />
-        </div>
-      </div>
+        {/* Cartes de statistiques modernisées */}
+        <motion.div
+          key={`stats-${selectedPeriod}`}
+          initial={{ opacity: 0, y: 24 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.4, duration: 0.5, ease: "easeOut" }}
+          className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8"
+        >
+          <StatCard
+            title="Chiffre d'affaires"
+            value={`${totalCA.toLocaleString()}€`}
+            subtitle="Cette période"
+            icon={<DollarSign className="w-6 h-6" />}
+            color="blue"
+            trend={`${tendanceCA >= 0 ? '+' : ''}${tendanceCA.toFixed(1)}%`}
+          />
+          <StatCard
+            title="Revenus nets"
+            value={`${totalRevenuNet.toLocaleString()}€`}
+            subtitle="Après coûts"
+            icon={<TrendingUp className="w-6 h-6" />}
+            color="green"
+            trend={`${tendanceRevenu >= 0 ? '+' : ''}${tendanceRevenu.toFixed(1)}%`}
+          />
+          <StatCard
+            title="Ventes totales"
+            value={stats.totalVentes.toString()}
+            subtitle="Transactions"
+            icon={<Package className="w-6 h-6" />}
+            color="purple"
+            trend={`${tendanceVentes >= 0 ? '+' : ''}${tendanceVentes}%`}
+          />
+          <StatCard
+            title="Marge moyenne"
+            value="78.5%"
+            subtitle="Par vente"
+            icon={<Users className="w-6 h-6" />}
+            color="orange"
+            trend={`${tendanceMarge >= 0 ? '+' : ''}${tendanceMarge.toFixed(1)}%`}
+          />
+        </motion.div>
 
-      {/* Cartes de statistiques modernisées */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-        <StatCard
-          title="Chiffre d'affaires"
-          value="25,847€"
-          subtitle="Cette période"
-          icon={<DollarSign className="w-6 h-6" />}
-          color="blue"
-          trend={`+${tendanceCA}%`}
-        />
-        <StatCard
-          title="Revenus nets"
-          value={`${totalRevenuNet.toLocaleString()}€`}
-          subtitle="Après coûts"
-          icon={<TrendingUp className="w-6 h-6" />}
-          color="green"
-          trend={`+${tendanceRevenu}%`}
-        />
-        <StatCard
-          title="Ventes totales"
-          value={stats.totalVentes.toString()}
-          subtitle="Transactions"
-          icon={<Package className="w-6 h-6" />}
-          color="purple"
-          trend={`${tendanceVentes}%`}
-        />
-        <StatCard
-          title="Marge moyenne"
-          value="78.5%"
-          subtitle="Par vente"
-          icon={<Users className="w-6 h-6" />}
-          color="orange"
-          trend={`+${tendanceMarge}%`}
-        />
-      </div>
-
-      {/* Graphiques et top ventes */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-        {/* Graphique d'évolution financière */}
-        <div className="bg-white/80 backdrop-blur-sm rounded-2xl border border-slate-200 p-6 col-span-2 shadow-sm">
-          <div className="flex items-center gap-3 mb-6">
-            <div className="w-8 h-8 bg-gradient-to-br from-indigo-100 to-purple-100 rounded-lg flex items-center justify-center">
-              <BarChart2 className="w-4 h-4 text-indigo-600" />
+        {/* Graphiques et top ventes */}
+        <motion.div
+          key={`charts-${selectedPeriod}`}
+          initial={{ opacity: 0, y: 24 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.5, duration: 0.5, ease: "easeOut" }}
+          className="grid grid-cols-1 lg:grid-cols-3 gap-8"
+        >
+          {/* Graphique d'évolution financière */}
+          <div className="bg-white/80 backdrop-blur-sm rounded-2xl border border-slate-200 p-6 col-span-2 shadow-sm hover:shadow-lg hover:scale-[1.01] transition-all duration-300">
+            <div className="flex items-center gap-3 mb-6">
+              <div className="w-8 h-8 bg-gradient-to-br from-indigo-100 to-purple-100 rounded-lg flex items-center justify-center group-hover:shadow-md transition-all duration-200">
+                <BarChart2 className="w-4 h-4 text-indigo-600 group-hover:scale-110 transition-transform duration-200" />
+              </div>
+              <div>
+                <h2 className="font-semibold text-slate-800 text-lg group-hover:text-slate-900 transition-colors duration-200">Évolution financière</h2>
+                <p className="text-slate-500 text-sm group-hover:text-slate-600 transition-colors duration-200">CA, revenus nets et marges de la période sélectionnée</p>
+              </div>
             </div>
-            <div>
-              <h2 className="font-semibold text-slate-800 text-lg">Évolution financière</h2>
-              <p className="text-slate-500 text-sm">CA, revenus nets et marges des 6 derniers mois</p>
-            </div>
-          </div>
-          <div className="h-80 w-full">
-            <ResponsiveContainer width="100%" height="100%">
-              <AreaChart data={financialData} margin={{ top: 20, right: 30, left: 0, bottom: 0 }}>
-                <defs>
-                  <linearGradient id="colorCA" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="5%" stopColor="#6366f1" stopOpacity={0.7}/>
-                    <stop offset="95%" stopColor="#6366f1" stopOpacity={0}/>
-                  </linearGradient>
-                  <linearGradient id="colorRevenus" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="5%" stopColor="#34d399" stopOpacity={0.7}/>
-                    <stop offset="95%" stopColor="#34d399" stopOpacity={0}/>
-                  </linearGradient>
-                  <linearGradient id="colorMarge" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="5%" stopColor="#a3a3a3" stopOpacity={0.7}/>
-                    <stop offset="95%" stopColor="#a3a3a3" stopOpacity={0}/>
-                  </linearGradient>
-                </defs>
-                <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#e5e7eb" />
-                <XAxis dataKey="month" tick={{ fontSize: 13, fill: '#6b7280' }} axisLine={false} tickLine={false} />
-                <YAxis tick={{ fontSize: 13, fill: '#6b7280' }} axisLine={false} tickLine={false} />
-                <Tooltip content={<CustomTooltip />} />
-                <Legend iconType="circle" wrapperStyle={{ fontSize: 12, color: '#6b7280' }} />
-                <Area type="monotone" dataKey="ca" stroke="#6366f1" strokeWidth={2.5} fillOpacity={1} fill="url(#colorCA)" name="Chiffre d'affaires" />
-                <Area type="monotone" dataKey="revenus" stroke="#34d399" strokeWidth={2.5} fillOpacity={1} fill="url(#colorRevenus)" name="Revenus nets" />
-                <Area type="monotone" dataKey="marge" stroke="#a3a3a3" strokeWidth={2.5} fillOpacity={1} fill="url(#colorMarge)" name="Marge" />
-              </AreaChart>
-            </ResponsiveContainer>
-          </div>
-        </div>
-
-        {/* Top 5 des meilleures ventes */}
-        <div className="bg-white/80 backdrop-blur-sm rounded-2xl border border-slate-200 p-6 shadow-sm">
-          <div className="flex items-center gap-3 mb-6">
-            <div className="w-8 h-8 bg-gradient-to-br from-purple-100 to-pink-100 rounded-lg flex items-center justify-center">
-              <Star className="w-4 h-4 text-purple-600" />
-            </div>
-            <div>
-              <h2 className="font-semibold text-slate-800 text-lg">Top 5 des meilleures ventes</h2>
-              <p className="text-slate-500 text-sm">Articles les plus performants ce mois-ci</p>
+            <div className="h-80 w-full">
+              <ResponsiveContainer width="100%" height="100%">
+                <AreaChart data={filteredFinancialData} margin={{ top: 20, right: 30, left: 0, bottom: 0 }}>
+                  <defs>
+                    <linearGradient id="colorCA" x1="0" y1="0" x2="0" y2="1">
+                      <stop offset="5%" stopColor="#6366f1" stopOpacity={0.7}/>
+                      <stop offset="95%" stopColor="#6366f1" stopOpacity={0}/>
+                    </linearGradient>
+                    <linearGradient id="colorRevenus" x1="0" y1="0" x2="0" y2="1">
+                      <stop offset="5%" stopColor="#34d399" stopOpacity={0.7}/>
+                      <stop offset="95%" stopColor="#34d399" stopOpacity={0}/>
+                    </linearGradient>
+                    <linearGradient id="colorMarge" x1="0" y1="0" x2="0" y2="1">
+                      <stop offset="5%" stopColor="#a3a3a3" stopOpacity={0.7}/>
+                      <stop offset="95%" stopColor="#a3a3a3" stopOpacity={0}/>
+                    </linearGradient>
+                  </defs>
+                  <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#e5e7eb" />
+                  <XAxis dataKey="month" tick={{ fontSize: 13, fill: '#6b7280' }} axisLine={false} tickLine={false} />
+                  <YAxis tick={{ fontSize: 13, fill: '#6b7280' }} axisLine={false} tickLine={false} />
+                  <Tooltip content={<CustomTooltip />} />
+                  <Legend iconType="circle" wrapperStyle={{ fontSize: 12, color: '#6b7280' }} />
+                  <Area type="monotone" dataKey="ca" stroke="#6366f1" strokeWidth={2.5} fillOpacity={1} fill="url(#colorCA)" name="Chiffre d'affaires" />
+                  <Area type="monotone" dataKey="revenus" stroke="#34d399" strokeWidth={2.5} fillOpacity={1} fill="url(#colorRevenus)" name="Revenus nets" />
+                  <Area type="monotone" dataKey="marge" stroke="#a3a3a3" strokeWidth={2.5} fillOpacity={1} fill="url(#colorMarge)" name="Marge" />
+                </AreaChart>
+              </ResponsiveContainer>
             </div>
           </div>
-          <div className="h-56 w-full mb-6">
-            <ResponsiveContainer width="100%" height="100%">
-              <BarChart data={topSalesData} margin={{ top: 20, right: 30, left: 0, bottom: 0 }} barCategoryGap={30}>
-                <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#e5e7eb" />
-                <XAxis dataKey="name" angle={-28} textAnchor="end" interval={0} height={70} tick={{ fontSize: 13, fill: '#6b7280' }} axisLine={false} tickLine={false} />
-                <YAxis tick={{ fontSize: 13, fill: '#6b7280' }} axisLine={false} tickLine={false} />
-                <Tooltip content={<CustomTooltip />} />
-                <Bar dataKey="ventes" radius={[8, 8, 0, 0]}>
-                  {topSalesData.map((entry, index) => (
-                    <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
-                  ))}
-                </Bar>
-              </BarChart>
-            </ResponsiveContainer>
-          </div>
-          <div className="space-y-3">
-            <TopSale index={1} name="Robe Zara fleurie" category="Vêtements" value="300€" sales={12} />
-            <TopSale index={2} name="Sneakers Nike Air Max" category="Chaussures" value="520€" sales={8} />
-            <TopSale index={3} name="Sac Longchamp" category="Sacs" value="270€" sales={6} />
-            <TopSale index={4} name="Jean Levi's 501" category="Vêtements" value="175€" sales={5} />
-            <TopSale index={5} name="Montre Daniel Wellington" category="Accessoires" value="320€" sales={4} />
-          </div>
-        </div>
-      </div>
-    </div>
-  );
-}
 
-function Filter({ label, icon }: { label: string, icon?: React.ReactNode }) {
-  return (
-    <Button variant="outline" className="flex items-center text-sm font-normal bg-white/50 border-slate-200 hover:bg-white">
-      {icon}
-      {label}
-      <ChevronDown className="w-4 h-4 ml-2" />
-    </Button>
+          {/* Top 5 des meilleures ventes */}
+          <div className="bg-white/80 backdrop-blur-sm rounded-2xl border border-slate-200 p-6 shadow-sm">
+            <div className="flex items-center gap-3 mb-6">
+              <div className="w-8 h-8 bg-gradient-to-br from-purple-100 to-pink-100 rounded-lg flex items-center justify-center">
+                <Star className="w-4 h-4 text-purple-600" />
+              </div>
+              <div>
+                <h2 className="font-semibold text-slate-800 text-lg">Top 5 des meilleures ventes</h2>
+                <p className="text-slate-500 text-sm">Articles les plus performants cette période</p>
+              </div>
+            </div>
+            <div className="h-56 w-full mb-6">
+              <ResponsiveContainer width="100%" height="100%">
+                <BarChart data={topSalesData} margin={{ top: 20, right: 30, left: 0, bottom: 0 }} barCategoryGap={30}>
+                  <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#e5e7eb" />
+                  <XAxis dataKey="name" angle={-28} textAnchor="end" interval={0} height={70} tick={{ fontSize: 13, fill: '#6b7280' }} axisLine={false} tickLine={false} />
+                  <YAxis tick={{ fontSize: 13, fill: '#6b7280' }} axisLine={false} tickLine={false} />
+                  <Tooltip content={<CustomTooltip />} />
+                  <Bar dataKey="ventes" radius={[8, 8, 0, 0]}>
+                    {topSalesData.map((entry, index) => (
+                      <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+                    ))}
+                  </Bar>
+                </BarChart>
+              </ResponsiveContainer>
+            </div>
+            <div className="space-y-3">
+              <TopSale index={1} name="Robe Zara fleurie" category="Vêtements" value="300€" sales={12} />
+              <TopSale index={2} name="Sneakers Nike Air Max" category="Chaussures" value="520€" sales={8} />
+              <TopSale index={3} name="Sac Longchamp" category="Sacs" value="270€" sales={6} />
+              <TopSale index={4} name="Jean Levi's 501" category="Vêtements" value="175€" sales={5} />
+              <TopSale index={5} name="Montre Daniel Wellington" category="Accessoires" value="320€" sales={4} />
+            </div>
+          </div>
+        </motion.div>
+      </motion.div>
+    </AnimatePresence>
   );
 }
 
@@ -301,36 +531,40 @@ function StatCard({ title, value, subtitle, icon, color, trend }: {
   color: string,
   trend: string
 }) {
+  const isPositive = trend.startsWith('+');
   const colorClasses = {
-    blue: "from-blue-500 to-blue-600",
-    green: "from-green-500 to-green-600",
-    purple: "from-purple-500 to-purple-600",
-    orange: "from-orange-500 to-orange-600",
+    blue: 'bg-gradient-to-br from-blue-500 to-blue-600',
+    green: 'bg-gradient-to-br from-green-500 to-green-600',
+    purple: 'bg-gradient-to-br from-purple-500 to-purple-600',
+    orange: 'bg-gradient-to-br from-orange-500 to-orange-600',
   };
 
-  const isPositive = trend.startsWith('+');
-
   return (
-    <div className="bg-white/80 backdrop-blur-sm rounded-2xl border border-slate-200 p-6 shadow-sm hover:shadow-md transition-all duration-200">
-      <div className="flex items-center justify-between">
-        <div>
-          <p className="text-sm font-medium text-slate-600">{title}</p>
-          <p className="text-2xl font-bold text-slate-900 mt-1">{value}</p>
-          <p className="text-xs text-slate-500 mt-1">{subtitle}</p>
+    <div className={`${colorClasses[color as keyof typeof colorClasses]} rounded-2xl p-6 text-white shadow-lg hover:shadow-xl hover:scale-105 transition-all duration-300 cursor-pointer group relative overflow-hidden`}>
+      {/* Effet de brillance au hover */}
+      <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/10 to-transparent -translate-x-full group-hover:translate-x-full transition-transform duration-700 ease-out"></div>
+      
+      <div className="relative z-10">
+        <div className="flex items-center justify-between mb-4">
+          <div className="p-3 bg-white/20 rounded-xl group-hover:bg-white/30 transition-all duration-200">
+            {React.cloneElement(icon as React.ReactElement, { 
+              className: 'w-6 h-6 group-hover:scale-110 transition-transform duration-200' 
+            })}
+          </div>
+          <div className="flex items-center gap-1 text-sm">
+            {isPositive ? (
+              <ArrowUpRight className="w-4 h-4 group-hover:scale-110 transition-transform duration-200" />
+            ) : (
+              <ArrowDownRight className="w-4 h-4 group-hover:scale-110 transition-transform duration-200" />
+            )}
+            <span className="font-semibold group-hover:scale-110 transition-transform duration-200">{trend}</span>
+          </div>
         </div>
-        <div className={`w-12 h-12 bg-gradient-to-br ${colorClasses[color as keyof typeof colorClasses]} rounded-xl flex items-center justify-center text-white shadow-lg`}>
-          {icon}
+        <div className="mb-2">
+          <h3 className="text-lg font-semibold group-hover:scale-105 transition-transform duration-200">{title}</h3>
+          <p className="text-2xl font-bold group-hover:scale-105 transition-transform duration-200">{value}</p>
         </div>
-      </div>
-      <div className="flex items-center gap-1 mt-3">
-        {isPositive ? (
-          <ArrowUpRight className="w-3 h-3 text-green-500" />
-        ) : (
-          <ArrowDownRight className="w-3 h-3 text-red-500" />
-        )}
-        <span className={`text-xs font-medium ${isPositive ? 'text-green-600' : 'text-red-600'}`}>
-          {trend}
-        </span>
+        <p className="text-white/80 text-sm group-hover:text-white transition-colors duration-200">{subtitle}</p>
       </div>
     </div>
   );
@@ -338,17 +572,17 @@ function StatCard({ title, value, subtitle, icon, color, trend }: {
 
 function TopSale({ index, name, category, value, sales }: { index: number, name: string, category: string, value: string, sales: number }) {
   return (
-    <div className="flex items-center gap-3 p-3 bg-slate-50/50 rounded-xl hover:bg-slate-50 transition-colors duration-200">
-      <div className="w-8 h-8 bg-gradient-to-br from-indigo-100 to-purple-100 rounded-lg flex items-center justify-center text-xs font-bold text-indigo-600">
-        {index}
+    <div className="flex items-center gap-4 p-4 rounded-xl hover:bg-slate-50 transition-all duration-200 hover:scale-105 hover:shadow-md cursor-pointer group">
+      <div className="w-8 h-8 bg-gradient-to-br from-indigo-100 to-purple-100 rounded-lg flex items-center justify-center font-bold text-indigo-600 group-hover:scale-110 transition-transform duration-200">
+        {index + 1}
       </div>
-      <div className="flex-1 min-w-0">
-        <div className="font-medium text-slate-900 truncate">{name}</div>
-        <div className="text-sm text-slate-500">{category}</div>
+      <div className="flex-1">
+        <div className="font-semibold text-slate-800 group-hover:text-slate-900 transition-colors duration-200">{name}</div>
+        <div className="text-sm text-slate-500 group-hover:text-slate-600 transition-colors duration-200">{category}</div>
       </div>
       <div className="text-right">
-        <div className="font-medium text-slate-900">{value}</div>
-        <div className="text-sm text-slate-500">{sales} ventes</div>
+        <div className="font-semibold text-slate-800 group-hover:text-slate-900 transition-colors duration-200">{value}</div>
+        <div className="text-sm text-slate-500 group-hover:text-slate-600 transition-colors duration-200">{sales} ventes</div>
       </div>
     </div>
   );
