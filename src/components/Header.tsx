@@ -25,7 +25,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
-import { useState, useRef } from "react";
+import { useState, useRef, useEffect } from "react";
 import { ArticleFormModal } from "@/components/ArticleFormModal";
 import { useRouter } from "next/navigation";
 import { useData } from "@/contexts/DataContext";
@@ -39,6 +39,9 @@ export function Header() {
   const [modalOpen, setModalOpen] = useState(false);
   const router = useRouter();
   const { addArticle, stats } = useData();
+  const [isMounted, setIsMounted] = useState(false);
+  useEffect(() => { setIsMounted(true); }, []);
+  if (!isMounted) return null;
 
   // Utiliser la vraie fonction d'ajout d'article du contexte
   const handleAddArticle = (article: any) => {

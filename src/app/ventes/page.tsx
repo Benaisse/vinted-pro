@@ -415,7 +415,7 @@ export default function VentesPage() {
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
         <StatCard
           title="Ventes totales"
-          value={stats.ventesTotales.toString()}
+          value={stats.ventesTotales != null ? stats.ventesTotales.toString() : '0'}
           subtitle="Cette période"
           icon={<Package className="w-6 h-6" />}
           color="blue"
@@ -423,7 +423,7 @@ export default function VentesPage() {
         />
         <StatCard
           title="Chiffre d'affaires"
-          value={`${stats.chiffreAffaires.toFixed(0)}€`}
+          value={stats.chiffreAffaires != null ? stats.chiffreAffaires.toFixed(0) + '€' : '0€'}
           subtitle="Total des ventes"
           icon={<DollarSign className="w-6 h-6" />}
           color="green"
@@ -431,7 +431,7 @@ export default function VentesPage() {
         />
         <StatCard
           title="Revenu net"
-          value={`${stats.revenuNet.toFixed(0)}€`}
+          value={stats.revenuNet != null ? stats.revenuNet.toFixed(0) + '€' : '0€'}
           subtitle="Après coût d'achat"
           icon={<TrendingUp className="w-6 h-6" />}
           color="purple"
@@ -439,7 +439,7 @@ export default function VentesPage() {
         />
         <StatCard
           title="Panier moyen"
-          value={`${stats.panierMoyen.toFixed(0)}€`}
+          value={stats.panierMoyen != null ? stats.panierMoyen.toFixed(0) + '€' : '0€'}
           subtitle="Par vente"
           icon={<Users className="w-6 h-6" />}
           color="orange"

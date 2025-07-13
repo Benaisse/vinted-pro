@@ -4,15 +4,14 @@ import React, { useState, useMemo } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { SalesChart, RevenueChart } from "@/components/Charts";
-import { ventes as ventesData } from "@/data/ventes";
-import { inventaire as inventaireData } from "@/data/inventaire";
-import { stock as stockData } from "@/data/stock";
-import { 
-  TrendingUp, 
-  DollarSign, 
-  Package, 
-  ShoppingCart, 
-  BarChart3, 
+import { useData } from "@/contexts/DataContext";
+import { useStats } from "@/contexts/StatsContext";
+import {
+  TrendingUp,
+  DollarSign,
+  Package,
+  ShoppingCart,
+  BarChart3,
   Calendar,
   Filter,
   Download,
@@ -32,6 +31,8 @@ import {
 } from "lucide-react";
 
 export default function AnalyticsPage() {
+  const { ventes, articles, stock } = useData();
+  const stats = useStats();
   const [periode, setPeriode] = useState("6mois");
   const [categorie, setCategorie] = useState("Toutes");
   const [filtresOuverts, setFiltresOuverts] = useState(false);
@@ -40,35 +41,32 @@ export default function AnalyticsPage() {
   const donneesGraphiques = useMemo(() => {
     const mois = ["Jan", "Fév", "Mar", "Avr", "Mai", "Juin"];
     return mois.map((mois, index) => {
-      const ventesMois = ventesData.filter((_, i) => i % 6 === index).length;
-      const revenusMois = ventesData
+      const ventesMois = ventes.filter((_, i) => i % 6 === index).length;
+      const revenusMois = ventes
         .filter((_, i) => i % 6 === index)
         .reduce((sum, v) => sum + v.prix, 0);
-      
       return {
         name: mois,
         ventes: ventesMois,
         revenus: revenusMois,
-        marge: ventesData
+        marge: ventes
           .filter((_, i) => i % 6 === index)
           .reduce((sum, v) => sum + v.marge, 0)
       };
     });
-  }, []);
+  }, [ventes]);
 
   // Statistiques principales
-  const stats = useMemo(() => {
-    const ventesFiltrees = categorie === "Toutes" 
-      ? ventesData 
-      : ventesData.filter(v => v.categorie === categorie);
-
+  const statsLocal = useMemo(() => {
+    const ventesFiltrees = categorie === "Toutes"
+      ? ventes
+      : ventes.filter(v => v.categorie === categorie);
     const totalVentes = ventesFiltrees.length;
     const chiffreAffaires = ventesFiltrees.reduce((sum, v) => sum + v.prix, 0);
     const margeTotale = ventesFiltrees.reduce((sum, v) => sum + v.marge, 0);
     const panierMoyen = totalVentes > 0 ? chiffreAffaires / totalVentes : 0;
     const margeMoyenne = totalVentes > 0 ? margeTotale / totalVentes : 0;
     const tauxMarge = chiffreAffaires > 0 ? (margeTotale / chiffreAffaires) * 100 : 0;
-
     return {
       totalVentes,
       chiffreAffaires,
@@ -77,15 +75,14 @@ export default function AnalyticsPage() {
       margeMoyenne,
       tauxMarge
     };
-  }, [categorie]);
+  }, [categorie, ventes]);
 
   // Top articles
   const topArticles = useMemo(() => {
-    const articlesVentes = inventaireData
+    const articlesVentes = articles
       .filter(a => a.statut === "Vendu")
       .sort((a, b) => b.vues - a.vues)
       .slice(0, 5);
-
     return articlesVentes.map(article => ({
       nom: article.nom,
       vues: article.vues,
@@ -93,29 +90,27 @@ export default function AnalyticsPage() {
       prix: article.prix,
       marge: article.marge
     }));
-  }, []);
+  }, [articles]);
 
   // Top catégories
   const topCategories = useMemo(() => {
-    const categories = ventesData.reduce((acc, vente) => {
+    const categories = ventes.reduce((acc, vente) => {
       acc[vente.categorie] = (acc[vente.categorie] || 0) + 1;
       return acc;
     }, {} as Record<string, number>);
-
     return Object.entries(categories)
       .map(([categorie, count]) => ({ categorie, count }))
       .sort((a, b) => b.count - a.count)
       .slice(0, 4);
-  }, []);
+  }, [ventes]);
 
   // Performance par mois
   const performanceMensuelle = useMemo(() => {
     const mois = ["Jan", "Fév", "Mar", "Avr", "Mai", "Juin"];
     return mois.map((mois, index) => {
-      const ventesMois = ventesData.filter((_, i) => i % 6 === index);
+      const ventesMois = ventes.filter((_, i) => i % 6 === index);
       const revenus = ventesMois.reduce((sum, v) => sum + v.prix, 0);
       const marges = ventesMois.reduce((sum, v) => sum + v.marge, 0);
-      
       return {
         mois,
         ventes: ventesMois.length,
@@ -124,14 +119,13 @@ export default function AnalyticsPage() {
         croissance: index > 0 ? ((revenus - 1000) / 1000) * 100 : 0
       };
     });
-  }, []);
+  }, [ventes]);
 
   // Alertes et insights
   const insights = useMemo(() => {
     const insights = [];
-    
     // Stock faible
-    const stockFaible = stockData.filter(s => s.statut === "Faible" || s.statut === "Rupture").length;
+    const stockFaible = stock.filter(s => s.statut === "Faible" || s.statut === "Rupture").length;
     if (stockFaible > 0) {
       insights.push({
         type: "warning",
@@ -139,9 +133,8 @@ export default function AnalyticsPage() {
         icon: <Package className="w-4 h-4" />
       });
     }
-
     // Articles non vendus
-    const articlesNonVendus = inventaireData.filter(a => a.statut === "En vente" && a.vues < 10).length;
+    const articlesNonVendus = articles.filter(a => a.statut === "En vente" && a.vues < 10).length;
     if (articlesNonVendus > 0) {
       insights.push({
         type: "info",
@@ -149,9 +142,8 @@ export default function AnalyticsPage() {
         icon: <Eye className="w-4 h-4" />
       });
     }
-
     // Marge faible
-    const margeFaible = inventaireData.filter(a => a.margePourcent < 50).length;
+    const margeFaible = articles.filter(a => a.margePourcent < 50).length;
     if (margeFaible > 0) {
       insights.push({
         type: "warning",
@@ -159,9 +151,8 @@ export default function AnalyticsPage() {
         icon: <TrendingUp className="w-4 h-4" />
       });
     }
-
     return insights;
-  }, []);
+  }, [articles, stock]);
 
   const categories = ["Toutes", "Vêtements", "Chaussures", "Sacs", "Accessoires"];
   const periodes = [
@@ -199,7 +190,7 @@ export default function AnalyticsPage() {
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
         <StatCard
           title="Ventes totales"
-          value={stats.totalVentes.toString()}
+          value={stats?.totalVentes != null ? stats.totalVentes.toString() : '0'}
           subtitle="Cette période"
           icon={<ShoppingCart className="w-6 h-6" />}
           color="blue"
@@ -207,25 +198,25 @@ export default function AnalyticsPage() {
         />
         <StatCard
           title="Chiffre d'affaires"
-          value={`${stats.chiffreAffaires.toFixed(0)}€`}
+          value={stats?.totalRevenus != null ? stats.totalRevenus.toString() + '€' : '0€'}
           subtitle="Total des ventes"
           icon={<DollarSign className="w-6 h-6" />}
           color="green"
           evolution="+8%"
         />
         <StatCard
-          title="Marge totale"
-          value={`${stats.margeTotale.toFixed(0)}€`}
-          subtitle="Bénéfice net"
-          icon={<TrendingUp className="w-6 h-6" />}
+          title="Total articles"
+          value={stats?.totalArticles != null ? stats.totalArticles.toString() : '0'}
+          subtitle="Dans l'inventaire"
+          icon={<Package className="w-6 h-6" />}
           color="purple"
           evolution="+15%"
         />
         <StatCard
-          title="Panier moyen"
-          value={`${stats.panierMoyen.toFixed(0)}€`}
-          subtitle="Par vente"
-          icon={<Users className="w-6 h-6" />}
+          title="Stock critique"
+          value={stats?.stockCritique != null ? stats.stockCritique.toString() : '0'}
+          subtitle="Articles en stock critique"
+          icon={<AlertCircle className="w-6 h-6" />}
           color="orange"
           evolution="+5%"
         />
@@ -322,7 +313,7 @@ export default function AnalyticsPage() {
             <h3 className="font-semibold text-slate-800">Évolution des ventes</h3>
           </div>
           <div className="h-64">
-            <SalesChart data={donneesGraphiques} />
+            <SalesChart />
           </div>
         </div>
 
@@ -334,7 +325,7 @@ export default function AnalyticsPage() {
             <h3 className="font-semibold text-slate-800">Revenus et marges</h3>
           </div>
           <div className="h-64">
-            <RevenueChart data={donneesGraphiques} />
+            <RevenueChart />
           </div>
         </div>
       </div>

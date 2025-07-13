@@ -68,6 +68,8 @@ interface DataContextType {
   ajouterAuStock: (article: Article, quantite: number) => void;
 }
 
+export type { DataContextType };
+
 const DataContext = createContext<DataContextType | undefined>(undefined);
 
 export function useData() {
@@ -80,6 +82,7 @@ export const DataProvider = ({ children }: { children: React.ReactNode }) => {
   const [articles, setArticles] = useState<Article[]>(inventaireData);
   const [ventes, setVentes] = useState<Vente[]>(ventesData);
   const [stock, setStock] = useState<StockItem[]>(stockData);
+  const [isLoaded, setIsLoaded] = useState(false);
 
   // Calcul des statistiques en temps réel
   const stats = {
@@ -237,6 +240,21 @@ export const DataProvider = ({ children }: { children: React.ReactNode }) => {
     }
   };
 
+  function toVente(obj: any): Vente {
+    return {
+      id: Number(obj.id),
+      article: String(obj.article),
+      categorie: String(obj.categorie),
+      acheteur: String(obj.acheteur),
+      prix: Number(obj.prix),
+      cout: Number(obj.cout),
+      marge: Number(obj.marge),
+      margePourcent: Number(obj.margePourcent),
+      date: String(obj.date),
+      statut: (["Livré", "Expédié", "En cours"].includes(obj.statut) ? obj.statut : "En cours") as "Livré" | "Expédié" | "En cours"
+    };
+  }
+
   // Sauvegarder dans localStorage pour persistance
   useEffect(() => {
     localStorage.setItem('vinted-pro-articles', JSON.stringify(articles));
@@ -254,10 +272,7 @@ export const DataProvider = ({ children }: { children: React.ReactNode }) => {
     if (savedVentes) {
       const parsedVentes = JSON.parse(savedVentes);
       // Vérifier que les statuts sont valides
-      const validVentes: Vente[] = parsedVentes.map((v: any) => ({
-        ...v,
-        statut: ["Livré", "Expédié", "En cours"].includes(v.statut) ? v.statut : "En cours"
-      }));
+      const validVentes: Vente[] = parsedVentes.map(toVente);
       setVentes(validVentes);
     }
     if (savedStock) {
@@ -269,7 +284,10 @@ export const DataProvider = ({ children }: { children: React.ReactNode }) => {
       }));
       setStock(validStock);
     }
+    setIsLoaded(true);
   }, []);
+
+  if (!isLoaded) return null;
 
   return (
     <DataContext.Provider value={{

@@ -2,7 +2,7 @@
 import { useState, useEffect, useRef } from "react";
 import { usePathname } from "next/navigation";
 import Link from "next/link";
-import { ShoppingCart, Home, Box, BarChart2, Settings, AlertTriangle, Menu as MenuIcon, X as CloseIcon, Crown, Star, TrendingUp, Package, DollarSign } from "lucide-react";
+import { ShoppingCart, Home, Box, BarChart2, Settings, AlertTriangle, Menu as MenuIcon, X as CloseIcon, Star } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import clsx from "clsx";
 import { ThemeToggle } from "@/components/ui/ThemeToggle";
@@ -14,26 +14,15 @@ export function Sidebar() {
   const [mobileOpen, setMobileOpen] = useState(false);
   const drawerRef = useRef<HTMLDivElement>(null);
   const { stats } = useData();
+  const [isMounted, setIsMounted] = useState(false);
 
-  const menu = [
-    { label: "Tableau de bord", icon: <Home className="w-5 h-5" />, href: "/" },
-    { label: "Ventes", icon: <ShoppingCart className="w-5 h-5" />, href: "/ventes", badge: stats.totalVentes.toString() },
-    { label: "Inventaire", icon: <Box className="w-5 h-5" />, href: "/inventaire" },
-    { label: "Stock", icon: <AlertTriangle className="w-5 h-5" />, href: "/stock", badge: (stats.stockFaible + stats.stockRupture).toString(), badgeColor: "red" },
-    { label: "Analytics", icon: <BarChart2 className="w-5 h-5" />, href: "/analytics" },
-    { label: "Abonnement", icon: <Star className="w-5 h-5" />, href: "/abonnement", badge: "Premium", badgeColor: "yellow" },
-    { label: "Paramètres", icon: <Settings className="w-5 h-5" />, href: "/parametres" },
-  ];
-
-  // Fermer le menu mobile après navigation
+  useEffect(() => { setIsMounted(true); }, []);
   useEffect(() => {
     if (!mobileOpen) return;
     const handleRoute = () => setMobileOpen(false);
     window.addEventListener("popstate", handleRoute);
     return () => window.removeEventListener("popstate", handleRoute);
   }, [mobileOpen]);
-
-  // Accessibilité : fermeture ESC et clic overlay
   useEffect(() => {
     if (!mobileOpen) return;
     const handleKey = (e: KeyboardEvent) => {
@@ -43,7 +32,18 @@ export function Sidebar() {
     return () => document.removeEventListener("keydown", handleKey);
   }, [mobileOpen]);
 
-  // Fermeture auto après clic sur un lien
+  if (!isMounted) return null;
+
+  const menu = [
+    { label: "Tableau de bord", icon: <Home className="w-5 h-5" />, href: "/" },
+    { label: "Ventes", icon: <ShoppingCart className="w-5 h-5" />, href: "/ventes", badge: stats.totalVentes?.toString() },
+    { label: "Inventaire", icon: <Box className="w-5 h-5" />, href: "/inventaire" },
+    { label: "Stock", icon: <AlertTriangle className="w-5 h-5" />, href: "/stock", badge: (stats.stockFaible + stats.stockRupture)?.toString(), badgeColor: "red" },
+    { label: "Analytics", icon: <BarChart2 className="w-5 h-5" />, href: "/analytics" },
+    { label: "Abonnement", icon: <Star className="w-5 h-5" />, href: "/abonnement", badge: "Premium", badgeColor: "yellow" },
+    { label: "Paramètres", icon: <Settings className="w-5 h-5" />, href: "/parametres" },
+  ];
+
   const handleNav = () => setMobileOpen(false);
 
   return (
@@ -56,7 +56,6 @@ export function Sidebar() {
           aria-label="Fermer le menu"
         />
       )}
-      
       {/* Sidebar modernisé avec glassmorphism */}
       <aside
         ref={drawerRef}
@@ -81,7 +80,6 @@ export function Sidebar() {
         >
           <CloseIcon className="w-5 h-5 text-slate-600" />
         </button>
-        
         {/* Bouton collapse desktop */}
         <button
           className="hidden md:block absolute -right-3 top-8 bg-white/80 backdrop-blur-sm border border-slate-200 rounded-full p-1.5 shadow-lg hover:shadow-xl transition-all duration-200 z-10 hover:bg-white"
@@ -90,7 +88,6 @@ export function Sidebar() {
         >
           {collapsed ? <MenuIcon className="w-4 h-4 text-slate-600" /> : <CloseIcon className="w-4 h-4 text-slate-600" />}
         </button>
-        
         {/* Logo modernisé */}
         <div className="flex items-center justify-center mb-8 px-2">
           <div className="bg-gradient-to-br from-indigo-500 to-purple-600 rounded-2xl p-3 shadow-lg flex items-center justify-center">
@@ -105,7 +102,6 @@ export function Sidebar() {
             </span>
           )}
         </div>
-        
         {/* Navigation modernisée */}
         <nav className="flex-1">
           <ul className="space-y-2">
@@ -126,7 +122,6 @@ export function Sidebar() {
             ))}
           </ul>
         </nav>
-        
         {/* Section statistiques rapides */}
         {!collapsed && (
           <div className="bg-gradient-to-br from-slate-50 to-slate-100/50 rounded-xl p-4 border border-slate-200">
@@ -142,7 +137,6 @@ export function Sidebar() {
             </div>
           </div>
         )}
-        
         {/* Bouton mode nuit/jour intégré en bas */}
         {!collapsed && (
           <div className="mt-6 flex justify-center">
@@ -150,7 +144,6 @@ export function Sidebar() {
           </div>
         )}
       </aside>
-      
       {/* Bouton hamburger mobile */}
       <button
         className="fixed bottom-6 left-6 z-50 bg-gradient-to-r from-indigo-600 to-purple-600 text-white rounded-full p-3 shadow-lg hover:shadow-xl transition-all duration-200 md:hidden"
@@ -202,13 +195,11 @@ function SidebarItem({ icon, label, href, active, badge, badgeColor, collapsed, 
             <span className="absolute -top-1 -right-1 w-3 h-3 bg-red-500 rounded-full animate-pulse border-2 border-white"></span>
           )}
         </span>
-        
         {!collapsed && (
           <span className="ml-3 flex-1 text-sm font-medium">
             {label}
           </span>
         )}
-        
         {badge && !collapsed && (
           <span className={clsx(
             "ml-2 text-xs font-bold px-2 py-0.5 rounded-full",
@@ -221,7 +212,6 @@ function SidebarItem({ icon, label, href, active, badge, badgeColor, collapsed, 
             {badge}
           </span>
         )}
-        
         {active && (
           <span className="absolute left-0 top-0 bottom-0 w-1 bg-white rounded-r-full" />
         )}
@@ -229,19 +219,3 @@ function SidebarItem({ icon, label, href, active, badge, badgeColor, collapsed, 
     </li>
   );
 }
-
-function ProgressBar({ label, value, max, color }: { label: string, value: number, max: number, color: string }) {
-  const percent = Math.round((value / max) * 100);
-  const barColor = color === "green" ? "bg-green-500" : color === "orange" ? "bg-orange-500" : "bg-gray-300";
-  return (
-    <div className="mb-1">
-      <div className="flex justify-between text-[11px] text-gray-500 mb-0.5">
-        <span>{label}</span>
-        <span>{value}/{max}</span>
-      </div>
-      <div className="w-full h-2 bg-gray-200 rounded-full">
-        <div className={clsx("h-2 rounded-full", barColor)} style={{ width: `${percent}%` }}></div>
-      </div>
-    </div>
-  );
-} 

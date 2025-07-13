@@ -1,6 +1,6 @@
 'use client'
 
-import React from 'react'
+import React, { useEffect, useState } from 'react'
 import { TrendingUp, TrendingDown } from 'lucide-react'
 
 interface StatsCardProps {
@@ -54,6 +54,9 @@ const colorClasses = {
 }
 
 export function StatsCard({ title, value, subtitle, icon, color, trend }: StatsCardProps) {
+  const [isMounted, setIsMounted] = useState(false);
+  useEffect(() => { setIsMounted(true); }, []);
+  if (!isMounted) return null;
   const colors = colorClasses[color]
   return (
     <div className={`
@@ -73,7 +76,7 @@ export function StatsCard({ title, value, subtitle, icon, color, trend }: StatsC
             {title}
           </span>
           <span className={`text-3xl font-bold ${colors.value} leading-tight`}>
-            {typeof value === 'number' ? value.toLocaleString() : value}
+            {isMounted ? (typeof value === 'number' ? value.toLocaleString() : value) : ''}
           </span>
         </div>
         <div className={`
@@ -114,4 +117,19 @@ export function StatsCard({ title, value, subtitle, icon, color, trend }: StatsC
       </div>
     </div>
   )
+} 
+
+export function StatCardSkeleton() {
+  return (
+    <div className="animate-pulse rounded-xl bg-gradient-to-br from-gray-100 to-gray-200 dark:from-gray-800 dark:to-gray-700 p-4 shadow flex flex-col gap-2 min-w-[180px] min-h-[110px]">
+      <div className="flex items-center gap-3">
+        <div className="w-10 h-10 bg-gray-300 dark:bg-gray-700 rounded-xl" />
+        <div className="flex-1">
+          <div className="h-4 w-20 bg-gray-300 dark:bg-gray-700 rounded mb-2" />
+          <div className="h-3 w-12 bg-gray-200 dark:bg-gray-600 rounded" />
+        </div>
+      </div>
+      <div className="h-6 w-24 bg-gray-200 dark:bg-gray-600 rounded mt-4" />
+    </div>
+  );
 } 
