@@ -25,64 +25,92 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
+import { useState, useRef } from "react";
+import { ArticleFormModal } from "@/components/ArticleFormModal";
+import { useRouter } from "next/navigation";
 
 export function Header() {
+  const [search, setSearch] = useState("");
+  const inputRef = useRef<HTMLInputElement>(null);
+  const [notifCount, setNotifCount] = useState(3);
+  const [msgCount, setMsgCount] = useState(2);
+  const [online, setOnline] = useState(true);
+  const [modalOpen, setModalOpen] = useState(false);
+  const router = useRouter();
+
+  // Mock: onSubmit ajoute juste un log (à remplacer par la logique réelle d'ajout d'article)
+  const handleAddArticle = (article: any) => {
+    console.log("Article ajouté:", article);
+  };
+
   return (
-    <header className="bg-white shadow-sm border-b h-16 flex items-center justify-between px-6">
-      <div className="flex items-center space-x-4 flex-1">
-        <div className="relative max-w-md w-full">
-          <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
-          <Input placeholder="Rechercher un article, acheteur..." className="pl-10" />
+    <header className="bg-white shadow-sm border-b h-16 flex items-center justify-between px-2 sm:px-6">
+      <div className="flex items-center space-x-2 sm:space-x-4 flex-1">
+        <div className="relative max-w-md w-full group">
+          <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-purple-400 h-5 w-5 group-focus-within:text-purple-600 transition-colors" />
+          <Input
+            ref={inputRef}
+            value={search}
+            onChange={e => setSearch(e.target.value)}
+            placeholder="Rechercher un article, acheteur..."
+            className="pl-10 pr-10 focus:ring-2 focus:ring-purple-400 focus:border-purple-400 transition-all"
+            aria-label="Recherche"
+          />
+          {search && (
+            <button
+              className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-red-500 focus:outline-none"
+              onClick={() => { setSearch(""); inputRef.current?.focus(); }}
+              aria-label="Effacer la recherche"
+            >
+              <svg width="18" height="18" fill="none" viewBox="0 0 24 24"><path stroke="currentColor" strokeWidth="2" d="M6 6l12 12M6 18L18 6"/></svg>
+            </button>
+          )}
         </div>
       </div>
-
-      <div className="flex items-center space-x-6">
-        {/* Quick Stats */}
-        <div className="hidden lg:flex items-center space-x-4 px-4 py-2 bg-gray-50 rounded-lg border">
-          <div className="flex items-center space-x-2">
-            <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>
-            <span className="text-sm font-medium text-gray-700">En ligne</span>
+      <div className="flex items-center space-x-2 sm:space-x-6">
+        {/* Statut en ligne + ventes */}
+        <div className="flex items-center space-x-2 px-2 py-1 bg-gradient-to-r from-purple-100 to-pink-100 rounded-lg border shadow-sm cursor-pointer group" tabIndex={0} title="Statut et ventes du jour">
+          <div className="flex items-center space-x-1">
+            <div className="w-2.5 h-2.5 rounded-full animate-pulse shadow-lg border-2 border-white" style={{background: online ? "#a21caf" : "#d1d5db"}}></div>
+            <span className="text-xs font-medium text-purple-700">{online ? "En ligne" : "Hors ligne"}</span>
           </div>
-          <div className="w-px h-4 bg-gray-300"></div>
-          <div className="text-sm text-gray-600">
-            <span className="font-semibold text-green-600">+12</span> ventes aujourd'hui
+          <span className="hidden sm:inline mx-1 text-gray-300">|</span>
+          <div className="text-xs text-gray-700 flex items-center gap-1">
+            <span className="font-bold text-green-600 animate-bounce-slow">+12</span>
+            <span className="hidden sm:inline">ventes aujourd'hui</span>
           </div>
         </div>
-
-        {/* Quick Actions */}
-        <div className="hidden md:flex items-center space-x-2">
-          <Button variant="ghost" size="sm" className="relative group">
-            <Package className="h-4 w-4 mr-2" />
-            <span className="hidden lg:inline">Ajouter</span>
-            <div className="absolute -bottom-8 left-1/2 transform -translate-x-1/2 bg-gray-900 text-white text-xs px-2 py-1 rounded opacity-0 group-hover:opacity-100 transition-opacity duration-200 whitespace-nowrap">
+        {/* Actions rapides */}
+        <div className="flex items-center space-x-1 sm:space-x-2">
+          <Button variant="ghost" size="icon" className="relative group" aria-label="Ajouter un article (Ctrl+N)" onClick={() => setModalOpen(true)}>
+            <Package className="h-5 w-5" />
+            <span className="sr-only">Ajouter</span>
+            <div className="absolute left-1/2 -bottom-8 transform -translate-x-1/2 bg-gray-900 text-white text-xs px-2 py-1 rounded opacity-0 group-hover:opacity-100 transition-opacity duration-200 whitespace-nowrap pointer-events-none">
               Ajouter un article (Ctrl+N)
             </div>
           </Button>
-
-          <Button variant="ghost" size="sm" className="relative group">
-            <TrendingUp className="h-4 w-4 mr-2" />
-            <span className="hidden lg:inline">Analytics</span>
-            <div className="absolute -bottom-8 left-1/2 transform -translate-x-1/2 bg-gray-900 text-white text-xs px-2 py-1 rounded opacity-0 group-hover:opacity-100 transition-opacity duration-200 whitespace-nowrap">
+          <Button variant="ghost" size="icon" className="relative group" aria-label="Voir les analytics (Ctrl+A)">
+            <TrendingUp className="h-5 w-5" />
+            <span className="sr-only">Analytics</span>
+            <div className="absolute left-1/2 -bottom-8 transform -translate-x-1/2 bg-gray-900 text-white text-xs px-2 py-1 rounded opacity-0 group-hover:opacity-100 transition-opacity duration-200 whitespace-nowrap pointer-events-none">
               Voir les analytics (Ctrl+A)
             </div>
           </Button>
         </div>
-
-        {/* Notifications avec système avancé */}
+        {/* Notifications */}
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
-            <Button variant="ghost" size="sm" className="relative group">
+            <Button variant="ghost" size="icon" className="relative group" aria-label="Notifications">
               <div className="relative">
                 <Bell className="h-5 w-5 transition-all duration-200 group-hover:scale-110" />
-                {/* Badge de notification avec animation */}
-                <div className="absolute -top-1 -right-1 h-5 w-5 flex items-center justify-center">
-                  <div className="absolute inset-0 bg-red-500 rounded-full animate-ping opacity-75"></div>
-                  <div className="relative bg-red-500 text-white text-xs font-bold rounded-full h-5 w-5 flex items-center justify-center">
-                    3
+                {notifCount > 0 && (
+                  <div className="absolute -top-1 -right-1 h-5 w-5 flex items-center justify-center">
+                    <div className="absolute inset-0 bg-red-500 rounded-full animate-ping opacity-75"></div>
+                    <div className="relative bg-red-500 text-white text-xs font-bold rounded-full h-5 w-5 flex items-center justify-center">
+                      {notifCount}
+                    </div>
                   </div>
-                </div>
-                {/* Indicateur de nouvelles notifications */}
-                <div className="absolute -top-0.5 -right-0.5 w-2 h-2 bg-blue-500 rounded-full opacity-0 group-hover:opacity-100 transition-opacity duration-200"></div>
+                )}
               </div>
             </Button>
           </DropdownMenuTrigger>
@@ -230,15 +258,16 @@ export function Header() {
             </div>
           </DropdownMenuContent>
         </DropdownMenu>
-
-        {/* Messages/Chat */}
+        {/* Messages */}
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
-            <Button variant="ghost" size="sm" className="relative group">
+            <Button variant="ghost" size="icon" className="relative group" aria-label="Messages">
               <MessageCircle className="h-5 w-5 transition-all duration-200 group-hover:scale-110" />
-              <div className="absolute -top-1 -right-1 h-4 w-4 bg-blue-500 text-white text-xs font-bold rounded-full flex items-center justify-center">
-                2
-              </div>
+              {msgCount > 0 && (
+                <div className="absolute -top-1 -right-1 h-4 w-4 bg-blue-500 text-white text-xs font-bold rounded-full flex items-center justify-center animate-pulse">
+                  {msgCount}
+                </div>
+              )}
             </Button>
           </DropdownMenuTrigger>
           <DropdownMenuContent align="end" className="w-80">
@@ -260,52 +289,20 @@ export function Header() {
             </DropdownMenuItem>
           </DropdownMenuContent>
         </DropdownMenu>
-
-        {/* Paramètres rapides */}
+        {/* Paramètres */}
+        <Button variant="ghost" size="icon" className="group" aria-label="Paramètres" onClick={() => router.push("/parametres")}>
+          <Settings className="h-5 w-5" />
+        </Button>
+        {/* Profil utilisateur */}
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
-            <Button variant="ghost" size="sm" className="relative group">
-              <Settings className="h-5 w-5 transition-all duration-200 group-hover:rotate-90" />
-            </Button>
-          </DropdownMenuTrigger>
-          <DropdownMenuContent align="end" className="w-56">
-            <DropdownMenuLabel>Paramètres rapides</DropdownMenuLabel>
-            <DropdownMenuSeparator />
-            <DropdownMenuItem>
-              <div className="flex items-center justify-between w-full">
-                <span>Mode sombre</span>
-                <div className="w-8 h-4 bg-gray-300 rounded-full relative cursor-pointer">
-                  <div className="w-3 h-3 bg-white rounded-full absolute top-0.5 left-0.5 transition-transform duration-200"></div>
-                </div>
-              </div>
-            </DropdownMenuItem>
-            <DropdownMenuItem>
-              <div className="flex items-center justify-between w-full">
-                <span>Notifications push</span>
-                <div className="w-8 h-4 bg-blue-500 rounded-full relative cursor-pointer">
-                  <div className="w-3 h-3 bg-white rounded-full absolute top-0.5 right-0.5 transition-transform duration-200"></div>
-                </div>
-              </div>
-            </DropdownMenuItem>
-          </DropdownMenuContent>
-        </DropdownMenu>
-
-        {/* User Menu amélioré */}
-        <DropdownMenu>
-          <DropdownMenuTrigger asChild>
-            <Button
-              variant="ghost"
-              className="relative h-10 w-10 rounded-full ring-2 ring-transparent hover:ring-purple-200 transition-all duration-200"
-            >
-              <Avatar className="h-10 w-10">
-                <AvatarImage src="/placeholder.svg?height=40&width=40" />
-                <AvatarFallback className="bg-gradient-to-r from-purple-500 to-pink-500 text-white font-semibold">
-                  JD
-                </AvatarFallback>
+            <button className="relative focus:outline-none group" aria-label="Profil utilisateur">
+              <Avatar className="h-8 w-8">
+                <AvatarImage src="/placeholder.svg?height=40&width=40" alt="Avatar utilisateur" />
+                <AvatarFallback>JD</AvatarFallback>
               </Avatar>
-              {/* Indicateur de statut */}
-              <div className="absolute bottom-0 right-0 w-3 h-3 bg-green-500 border-2 border-white rounded-full"></div>
-            </Button>
+              <span className="absolute bottom-0 right-0 w-3 h-3 bg-green-400 border-2 border-white rounded-full"></span>
+            </button>
           </DropdownMenuTrigger>
           <DropdownMenuContent align="end" className="w-64">
             {/* Profil utilisateur */}
@@ -367,6 +364,8 @@ export function Header() {
           </DropdownMenuContent>
         </DropdownMenu>
       </div>
+      {/* Modal d'ajout d'article */}
+      <ArticleFormModal open={modalOpen} onClose={() => setModalOpen(false)} onSubmit={handleAddArticle} />
     </header>
-  )
+  );
 } 
