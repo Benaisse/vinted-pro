@@ -41,6 +41,7 @@ export function Sidebar() {
     { label: "Stock", icon: <AlertTriangle className="w-5 h-5" />, href: "/stock", badge: (stats.stockFaible + stats.stockRupture)?.toString(), badgeColor: "red" },
     { label: "Analytics", icon: <BarChart2 className="w-5 h-5" />, href: "/analytics" },
     { label: "AI Analytics", icon: <Bot className="w-5 h-5" />, href: "/ai-analytics", badge: "AI", badgeColor: "purple" },
+    { label: "Démo AI", icon: <Bot className="w-5 h-5" />, href: "/ai-demo", badge: "NEW", badgeColor: "green" },
     { label: "Abonnement", icon: <Star className="w-5 h-5" />, href: "/abonnement", badge: "Premium", badgeColor: "yellow" },
     { label: "Paramètres", icon: <Settings className="w-5 h-5" />, href: "/parametres" },
   ];
