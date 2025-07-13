@@ -23,6 +23,7 @@ import {
   Eye,
   EyeOff
 } from "lucide-react";
+import AbonnementPage from "../abonnement/page";
 
 export default function ParametresPage() {
   const [activeTab, setActiveTab] = useState("compte");
@@ -355,45 +356,7 @@ export default function ParametresPage() {
           {/* Onglet Abonnement */}
           {activeTab === "abonnement" && (
             <div className="space-y-6">
-              <div>
-                <h3 className="text-lg font-semibold text-gray-900 mb-4 flex items-center gap-2">
-                  <CreditCard className="w-5 h-5" />
-                  Gestion de l'abonnement
-                </h3>
-                
-                <div className="bg-gradient-to-r from-purple-50 to-pink-50 border border-purple-200 rounded-lg p-6">
-                  <div className="flex items-center justify-between mb-4">
-                    <div>
-                      <h4 className="font-semibold text-gray-900">Plan actuel : Gratuit</h4>
-                      <p className="text-sm text-gray-600">0€/mois</p>
-                    </div>
-                    <span className="bg-yellow-100 text-yellow-800 px-3 py-1 rounded-full text-sm font-medium">
-                      -35% sur Premium
-                    </span>
-                  </div>
-                  
-                  <div className="space-y-2 text-sm text-gray-600">
-                    <div className="flex items-center gap-2">
-                      <span className="w-2 h-2 bg-gray-400 rounded-full"></span>
-                      50 articles suivis
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <span className="w-2 h-2 bg-gray-400 rounded-full"></span>
-                      25 ventes/mois
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <span className="w-2 h-2 bg-gray-400 rounded-full"></span>
-                      Statistiques de base
-                    </div>
-                  </div>
-                  
-                  <div className="mt-4">
-                    <Button className="w-full bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700">
-                      Passer à Premium
-                    </Button>
-                  </div>
-                </div>
-              </div>
+              <AbonnementPage />
             </div>
           )}
 

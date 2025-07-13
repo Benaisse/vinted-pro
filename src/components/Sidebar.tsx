@@ -2,7 +2,7 @@
 import { useState, useEffect, useRef } from "react";
 import { usePathname } from "next/navigation";
 import Link from "next/link";
-import { ShoppingCart, Home, Box, BarChart2, Settings, AlertTriangle, Menu as MenuIcon, X as CloseIcon } from "lucide-react";
+import { ShoppingCart, Home, Box, BarChart2, Settings, AlertTriangle, Menu as MenuIcon, X as CloseIcon, Crown } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import clsx from "clsx";
 import { ThemeToggle } from "@/components/ui/ThemeToggle";
@@ -13,6 +13,7 @@ const menu = [
   { label: "Inventaire", icon: <Box className="w-5 h-5" />, href: "/inventaire" },
   { label: "Stock", icon: <AlertTriangle className="w-5 h-5" />, href: "/stock", badge: "3", badgeColor: "red" },
   { label: "Analytics", icon: <BarChart2 className="w-5 h-5" />, href: "/analytics" },
+  { label: "Abonnement", icon: <Crown className="w-5 h-5" />, href: "/abonnement" },
   { label: "Paramètres", icon: <Settings className="w-5 h-5" />, href: "/parametres" },
 ];
 
@@ -94,7 +95,7 @@ export function Sidebar() {
               <text x="50%" y="55%" textAnchor="middle" fill="#a21caf" fontSize="20" fontWeight="bold" dy=".3em" fontFamily="Arial, sans-serif">VP</text>
             </svg>
           </div>
-          {!collapsed && <span className="font-extrabold text-2xl text-transparent bg-clip-text bg-gradient-to-tr from-purple-500 to-pink-500 ml-3 tracking-wide drop-shadow-lg">Vinted Pro</span>}
+          {!collapsed && <span className="font-extrabold text-2xl text-transparent bg-clip-text bg-gradient-to-tr from-purple-700 to-pink-600 ml-3 tracking-wide drop-shadow-[0_2px_6px_rgba(0,0,0,0.25)] opacity-95">Vinted Pro</span>}
         </div>
         {/* Navigation avec animation d'apparition */}
         <nav className="flex-1">
@@ -116,36 +117,6 @@ export function Sidebar() {
             ))}
           </ul>
         </nav>
-        {/* Carte d'abonnement */}
-        {!collapsed && (
-          <div className="bg-gradient-to-tr from-purple-100/80 to-pink-100/80 rounded-2xl p-4 mb-2 shadow-md border border-white/40">
-            <div className="flex items-center justify-between mb-2">
-              <span className="text-xs text-gray-500 font-medium">Plan Gratuit</span>
-              <span className="text-xs text-gray-400">0€/mois</span>
-            </div>
-            <div className="flex flex-col space-y-1 mb-2">
-              <ProgressBar label="Articles suivis" value={47} max={50} color="green" />
-              <ProgressBar label="Ventes ce mois" value={23} max={25} color="orange" />
-            </div>
-            <div className="bg-orange-50 text-orange-700 text-xs rounded-md px-2 py-1 flex items-center mb-2 animate-pulse">
-              <AlertTriangle className="w-4 h-4 mr-1" />
-              Plus que 3 articles avant la limite gratuite
-            </div>
-            <div className="bg-gradient-to-r from-purple-500 to-pink-500 rounded-lg p-3 text-white mb-2 shadow">
-              <div className="flex items-center justify-between mb-1">
-                <span className="font-bold text-sm">Premium</span>
-                <span className="bg-white/20 rounded px-2 py-0.5 text-xs">-35%</span>
-              </div>
-              <div className="text-xs mb-2">Illimité | IA avancée</div>
-              <div className="flex items-center mb-2">
-                <span className="text-lg font-bold mr-1">19€</span>
-                <span className="text-xs">/mois</span>
-              </div>
-              <Button className="w-full bg-white text-purple-600 font-semibold hover:bg-purple-50 text-xs py-2">Passer à Premium</Button>
-              <div className="text-[10px] text-white/80 mt-1">Essai gratuit 7 jours</div>
-            </div>
-          </div>
-        )}
         {/* Bouton mode nuit/jour intégré en bas */}
         {!collapsed && (
           <div className="mt-8 flex justify-center">

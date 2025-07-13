@@ -8,21 +8,27 @@ export default function AbonnementPage() {
 
   return (
     <div className="max-w-4xl mx-auto py-8 px-2 sm:px-4">
+      {/* Bandeau bénéfice clé */}
+      <div className="mb-6">
+        <div className="bg-gradient-to-r from-pink-400 via-purple-500 to-indigo-500 text-white rounded-xl py-3 px-6 text-center text-lg font-semibold shadow-lg animate-pulse-slow">
+          🚀 Débloquez tout le potentiel de votre boutique avec Premium !
+        </div>
+      </div>
       {/* Header visuel */}
       <div className="relative rounded-2xl overflow-hidden mb-8 shadow-lg">
         <div className="bg-gradient-to-tr from-purple-500 to-pink-500 h-32 flex items-center px-8">
-          <Crown className="w-14 h-14 text-yellow-300 drop-shadow-lg opacity-90" />
+          <Crown className="w-14 h-14 text-yellow-300 drop-shadow-lg opacity-90 animate-bounce-slow" />
           <div className="ml-6">
             <h1 className="text-3xl font-bold text-white mb-1">Abonnement</h1>
+            <div className="text-white/80 text-sm mb-1">Gérez votre formule et découvrez les avantages Premium.</div>
             <div className="flex items-center gap-2">
               <span className="bg-white/20 text-white px-3 py-1 rounded-full text-sm font-semibold">Votre formule : {isPremium ? "Premium" : "Gratuit"}</span>
-              {!isPremium && <span className="bg-yellow-300 text-yellow-900 px-2 py-0.5 rounded-full text-xs font-bold ml-2">-35% sur Premium</span>}
+              {!isPremium && <span className="bg-yellow-300 text-yellow-900 px-2 py-0.5 rounded-full text-xs font-bold ml-2 animate-pulse">-35% sur Premium</span>}
             </div>
           </div>
         </div>
         <Crown className="absolute right-6 top-2 w-20 h-20 text-yellow-200 opacity-20 pointer-events-none" />
       </div>
-
       {/* Comparatif des offres */}
       <div className="mb-10">
         <div className="font-semibold text-lg mb-4 text-center">Comparez les formules</div>
@@ -31,69 +37,68 @@ export default function AbonnementPage() {
             <thead>
               <tr>
                 <th className="w-1/2 text-lg font-bold py-2 bg-gray-50 rounded-tl-xl">Gratuit</th>
-                <th className="w-1/2 text-lg font-bold py-2 bg-gradient-to-tr from-purple-500 to-pink-500 text-white rounded-tr-xl relative">
+                <th className="w-1/2 text-lg font-bold py-2 bg-gradient-to-tr from-purple-500 to-pink-500 text-white rounded-tr-xl relative shadow-lg border-2 border-yellow-200 animate-glow-premium">
                   Premium
-                  <span className="absolute top-2 right-4 bg-yellow-300 text-yellow-900 text-xs font-bold px-2 py-0.5 rounded-full">-35%</span>
+                  <span className="absolute top-2 right-4 bg-yellow-300 text-yellow-900 text-xs font-bold px-2 py-0.5 rounded-full animate-pulse">-35%</span>
                 </th>
               </tr>
             </thead>
             <tbody className="text-sm">
               <tr>
                 <td className="bg-white text-center py-3 rounded-l-xl">0€/mois</td>
-                <td className="bg-white text-center py-3 rounded-r-xl font-bold text-purple-600 shadow-lg border-2 border-purple-200">19€/mois</td>
+                <td className="bg-white text-center py-3 rounded-r-xl font-bold text-purple-600 shadow-lg border-2 border-purple-200">19€/mois <span className='text-xs text-gray-400 font-normal'>(après réduction)</span></td>
               </tr>
               <tr>
                 <td className="bg-gray-50 text-center py-2">50 articles suivis</td>
-                <td className="bg-purple-50 text-center py-2 font-semibold">Articles illimités</td>
+                <td className="bg-purple-50 text-center py-2 font-semibold flex items-center justify-center gap-1"><CheckCircle className="inline w-4 h-4 text-green-500 mr-1" />Articles illimités</td>
               </tr>
               <tr>
                 <td className="bg-gray-50 text-center py-2">25 ventes/mois</td>
-                <td className="bg-purple-50 text-center py-2 font-semibold">Ventes illimitées</td>
+                <td className="bg-purple-50 text-center py-2 font-semibold flex items-center justify-center gap-1"><CheckCircle className="inline w-4 h-4 text-green-500 mr-1" />Ventes illimitées</td>
               </tr>
               <tr>
-                <td className="bg-gray-50 text-center py-2"><XCircle className="inline w-4 h-4 text-gray-300 mr-1" />Alertes IA personnalisées</td>
-                <td className="bg-purple-50 text-center py-2 font-semibold"><CheckCircle className="inline w-4 h-4 text-green-500 mr-1" />Alertes IA personnalisées</td>
+                <td className="bg-gray-50 text-center py-2 flex items-center justify-center gap-1"><XCircle className="inline w-4 h-4 text-gray-300 mr-1" />Alertes IA personnalisées</td>
+                <td className="bg-purple-50 text-center py-2 font-semibold flex items-center justify-center gap-1"><CheckCircle className="inline w-4 h-4 text-green-500 mr-1" />Alertes IA personnalisées</td>
               </tr>
               <tr>
-                <td className="bg-gray-50 text-center py-2"><XCircle className="inline w-4 h-4 text-gray-300 mr-1" />Statistiques avancées</td>
-                <td className="bg-purple-50 text-center py-2 font-semibold"><CheckCircle className="inline w-4 h-4 text-green-500 mr-1" />Statistiques avancées</td>
+                <td className="bg-gray-50 text-center py-2 flex items-center justify-center gap-1"><XCircle className="inline w-4 h-4 text-gray-300 mr-1" />Statistiques avancées</td>
+                <td className="bg-purple-50 text-center py-2 font-semibold flex items-center justify-center gap-1"><CheckCircle className="inline w-4 h-4 text-green-500 mr-1" />Statistiques avancées</td>
               </tr>
               <tr>
-                <td className="bg-gray-50 text-center py-2 rounded-bl-xl"><XCircle className="inline w-4 h-4 text-gray-300 mr-1" />Support prioritaire</td>
-                <td className="bg-purple-50 text-center py-2 font-semibold rounded-br-xl"><CheckCircle className="inline w-4 h-4 text-green-500 mr-1" />Support prioritaire</td>
+                <td className="bg-gray-50 text-center py-2 rounded-bl-xl flex items-center justify-center gap-1"><XCircle className="inline w-4 h-4 text-gray-300 mr-1" />Support prioritaire</td>
+                <td className="bg-purple-50 text-center py-2 font-semibold rounded-br-xl flex items-center justify-center gap-1"><CheckCircle className="inline w-4 h-4 text-green-500 mr-1" />Support prioritaire</td>
               </tr>
             </tbody>
           </table>
         </div>
       </div>
-
       {/* Section Pourquoi Premium */}
       <div className="mb-10">
         <div className="font-semibold text-lg mb-4 text-center">Pourquoi passer à Premium ?</div>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <div className="bg-white rounded-xl p-5 shadow hover:shadow-lg transition-shadow flex items-center gap-4">
-            <CheckCircle className="w-8 h-8 text-green-500" />
+          <div className="bg-white rounded-xl p-5 shadow hover:shadow-xl transition-shadow flex items-center gap-4 border-l-4 border-purple-400">
+            <CheckCircle className="w-8 h-8 text-green-500 animate-bounce-slow" />
             <div>
               <div className="font-semibold">Aucune limite d’articles ou de ventes</div>
               <div className="text-sm text-gray-500">Développez votre activité sans contrainte.</div>
             </div>
           </div>
-          <div className="bg-white rounded-xl p-5 shadow hover:shadow-lg transition-shadow flex items-center gap-4">
-            <CheckCircle className="w-8 h-8 text-green-500" />
+          <div className="bg-white rounded-xl p-5 shadow hover:shadow-xl transition-shadow flex items-center gap-4 border-l-4 border-pink-400">
+            <CheckCircle className="w-8 h-8 text-green-500 animate-bounce-slow" />
             <div>
               <div className="font-semibold">Alertes IA personnalisées</div>
               <div className="text-sm text-gray-500">Recevez des conseils et alertes sur-mesure.</div>
             </div>
           </div>
-          <div className="bg-white rounded-xl p-5 shadow hover:shadow-lg transition-shadow flex items-center gap-4">
-            <CheckCircle className="w-8 h-8 text-green-500" />
+          <div className="bg-white rounded-xl p-5 shadow hover:shadow-xl transition-shadow flex items-center gap-4 border-l-4 border-yellow-400">
+            <CheckCircle className="w-8 h-8 text-green-500 animate-bounce-slow" />
             <div>
               <div className="font-semibold">Statistiques avancées</div>
               <div className="text-sm text-gray-500">Analysez vos performances en détail.</div>
             </div>
           </div>
-          <div className="bg-white rounded-xl p-5 shadow hover:shadow-lg transition-shadow flex items-center gap-4">
-            <CheckCircle className="w-8 h-8 text-green-500" />
+          <div className="bg-white rounded-xl p-5 shadow hover:shadow-xl transition-shadow flex items-center gap-4 border-l-4 border-indigo-400">
+            <CheckCircle className="w-8 h-8 text-green-500 animate-bounce-slow" />
             <div>
               <div className="font-semibold">Support prioritaire</div>
               <div className="text-sm text-gray-500">Une équipe dédiée pour vous accompagner.</div>
@@ -101,16 +106,15 @@ export default function AbonnementPage() {
           </div>
         </div>
       </div>
-
       {/* Call to action */}
       <div className="flex flex-col items-center mb-10">
         {isPremium ? (
           <button className="bg-gray-100 text-gray-500 font-semibold py-3 px-8 rounded-lg cursor-not-allowed">Déjà Premium</button>
         ) : (
-          <button className="bg-gradient-to-tr from-purple-500 to-pink-500 text-white font-semibold py-3 px-8 rounded-lg shadow-lg hover:scale-105 hover:shadow-xl transition-all text-lg">Passer à Premium</button>
+          <button className="bg-gradient-to-tr from-purple-500 via-pink-500 to-yellow-400 text-white font-semibold py-3 px-8 rounded-lg shadow-xl hover:scale-105 hover:shadow-2xl transition-all text-lg animate-glow-premium">Passer à Premium</button>
         )}
         {!isPremium && (
-          <div className="text-xs text-orange-600 bg-orange-50 rounded px-2 py-1 mt-2">Limite gratuite : 50 articles suivis, 25 ventes/mois</div>
+          <div className="text-xs text-orange-600 bg-orange-50 rounded px-2 py-1 mt-2 shadow animate-pulse">Essai gratuit 7 jours. Limite gratuite : 50 articles suivis, 25 ventes/mois</div>
         )}
       </div>
 
