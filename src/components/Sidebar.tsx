@@ -2,7 +2,7 @@
 import { useState, useEffect, useRef } from "react";
 import { usePathname } from "next/navigation";
 import Link from "next/link";
-import { ShoppingCart, Home, Box, BarChart2, Settings, AlertTriangle, Menu as MenuIcon, X as CloseIcon, Star } from "lucide-react";
+import { ShoppingCart, Home, Box, BarChart2, Settings, AlertTriangle, Menu as MenuIcon, X as CloseIcon, Star, Bot } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import clsx from "clsx";
 import { ThemeToggle } from "@/components/ui/ThemeToggle";
@@ -40,6 +40,7 @@ export function Sidebar() {
     { label: "Inventaire", icon: <Box className="w-5 h-5" />, href: "/inventaire" },
     { label: "Stock", icon: <AlertTriangle className="w-5 h-5" />, href: "/stock", badge: (stats.stockFaible + stats.stockRupture)?.toString(), badgeColor: "red" },
     { label: "Analytics", icon: <BarChart2 className="w-5 h-5" />, href: "/analytics" },
+    { label: "AI Analytics", icon: <Bot className="w-5 h-5" />, href: "/ai-analytics", badge: "AI", badgeColor: "purple" },
     { label: "Abonnement", icon: <Star className="w-5 h-5" />, href: "/abonnement", badge: "Premium", badgeColor: "yellow" },
     { label: "Paramètres", icon: <Settings className="w-5 h-5" />, href: "/parametres" },
   ];

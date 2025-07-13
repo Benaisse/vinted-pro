@@ -13,6 +13,7 @@ import {
   ShoppingCart,
   Crown,
   LogOut,
+  Bot,
 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -27,6 +28,7 @@ import {
 } from "@/components/ui/dropdown-menu"
 import { useState, useRef, useEffect } from "react";
 import { ArticleFormModal } from "@/components/ArticleFormModal";
+import { AIAssistant } from "@/components/AIAssistant";
 import { useRouter } from "next/navigation";
 import { useData } from "@/contexts/DataContext";
 
@@ -37,6 +39,7 @@ export function Header() {
   const [msgCount, setMsgCount] = useState(2);
   const [online, setOnline] = useState(true);
   const [modalOpen, setModalOpen] = useState(false);
+  const [aiAssistantOpen, setAiAssistantOpen] = useState(false);
   const router = useRouter();
   const { addArticle, stats } = useData();
   const [isMounted, setIsMounted] = useState(false);
@@ -101,6 +104,13 @@ export function Header() {
             <span className="sr-only">Ajouter</span>
             <div className="absolute left-1/2 -bottom-8 transform -translate-x-1/2 bg-gray-900 text-white text-xs px-2 py-1 rounded opacity-0 group-hover:opacity-100 transition-opacity duration-200 whitespace-nowrap pointer-events-none">
               Ajouter un article (Ctrl+N)
+            </div>
+          </Button>
+          <Button variant="ghost" size="icon" className="relative group hover:bg-purple-50 hover:scale-110 transition-all duration-200" aria-label="Assistant AI (Ctrl+AI)" onClick={() => setAiAssistantOpen(true)}>
+            <Bot className="h-5 w-5 group-hover:rotate-12 transition-transform duration-200" />
+            <span className="sr-only">Assistant AI</span>
+            <div className="absolute left-1/2 -bottom-8 transform -translate-x-1/2 bg-gray-900 text-white text-xs px-2 py-1 rounded opacity-0 group-hover:opacity-100 transition-opacity duration-200 whitespace-nowrap pointer-events-none">
+              Assistant AI (Ctrl+AI)
             </div>
           </Button>
           <Button variant="ghost" size="icon" className="relative group hover:bg-purple-50 hover:scale-110 transition-all duration-200" aria-label="Voir les analytics (Ctrl+A)">
@@ -380,6 +390,8 @@ export function Header() {
       </div>
       {/* Modal d'ajout d'article */}
       <ArticleFormModal open={modalOpen} onClose={() => setModalOpen(false)} onSubmit={handleAddArticle} />
+              {/* Assistant AI */}
+        <AIAssistant isOpen={aiAssistantOpen} onClose={() => setAiAssistantOpen(false)} />
     </header>
   );
 } 
