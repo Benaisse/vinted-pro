@@ -78,8 +78,9 @@ export function useData() {
 }
 
 export const DataProvider = ({ children }: { children: React.ReactNode }) => {
+  // Initialisation par défaut avec les données mock
   const [articles, setArticles] = useState<Article[]>(inventaireData);
-  const [ventes, setVentes] = useState<Vente[]>(ventesData);
+  const [ventes, setVentes] = useState<Vente[]>(ventesData.map(toVente));
   const [stock, setStock] = useState<StockItem[]>(stockData);
   const [isLoaded, setIsLoaded] = useState(false);
 
@@ -254,36 +255,23 @@ export const DataProvider = ({ children }: { children: React.ReactNode }) => {
     };
   }
 
-  // Sauvegarder dans localStorage pour persistance
+  // Charger les données du localStorage côté client uniquement
   useEffect(() => {
-    localStorage.setItem('vinted-pro-articles', JSON.stringify(articles));
-    localStorage.setItem('vinted-pro-ventes', JSON.stringify(ventes));
-    localStorage.setItem('vinted-pro-stock', JSON.stringify(stock));
-  }, [articles, ventes, stock]);
-
-  // Charger depuis localStorage au démarrage
-  useEffect(() => {
-    const savedArticles = localStorage.getItem('vinted-pro-articles');
-    const savedVentes = localStorage.getItem('vinted-pro-ventes');
-    const savedStock = localStorage.getItem('vinted-pro-stock');
-
-    if (savedArticles) setArticles(JSON.parse(savedArticles));
-    if (savedVentes) {
-      const parsedVentes = JSON.parse(savedVentes);
-      // Vérifier que les statuts sont valides
-      const validVentes: Vente[] = parsedVentes.map(toVente);
-      setVentes(validVentes);
+    if (typeof window !== "undefined") {
+      const savedArticles = localStorage.getItem('vinted-pro-articles');
+      if (savedArticles) setArticles(JSON.parse(savedArticles));
+      const savedVentes = localStorage.getItem('vinted-pro-ventes');
+      if (savedVentes) setVentes(JSON.parse(savedVentes).map(toVente));
+      const savedStock = localStorage.getItem('vinted-pro-stock');
+      if (savedStock) {
+        const parsedStock = JSON.parse(savedStock);
+        setStock(parsedStock.map((s: any) => ({
+          ...s,
+          statut: ["Normal", "Faible", "Rupture"].includes(s.statut) ? s.statut : "Normal"
+        })));
+      }
+      setIsLoaded(true);
     }
-    if (savedStock) {
-      const parsedStock = JSON.parse(savedStock);
-      // Vérifier que les statuts sont valides
-      const validStock = parsedStock.map((s: any) => ({
-        ...s,
-        statut: ["Normal", "Faible", "Rupture"].includes(s.statut) ? s.statut : "Normal"
-      }));
-      setStock(validStock);
-    }
-    setIsLoaded(true);
   }, []);
 
   if (!isLoaded) return null;

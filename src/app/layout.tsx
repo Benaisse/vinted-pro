@@ -2,6 +2,7 @@ import { Providers } from "./providers";
 import { Sidebar } from '@/components/Sidebar';
 import { Header } from '@/components/Header';
 import './globals.css';
+import '@/lib/supabaseClient';
 // SUPPRIME: import { AnimatePresence } from "framer-motion";
 
 export default function RootLayout({
