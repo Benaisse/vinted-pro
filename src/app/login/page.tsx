@@ -35,7 +35,7 @@ export default function LoginPage() {
     setIsSubmitting(true);
     try {
       await signIn(email, password);
-      router.replace("/dashboard");
+      router.replace("/");
     } catch (err: any) {
       setError(err.message || "Erreur de connexion");
     } finally {

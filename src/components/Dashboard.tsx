@@ -66,7 +66,7 @@ function CustomTooltip({ active, payload, label }: any) {
 }
 
 export function Dashboard() {
-  const { stats } = useData();
+  const { ventes, stats } = useData();
   const [modalOpen, setModalOpen] = React.useState(false);
   
   // États pour les filtres de période
@@ -120,18 +120,19 @@ export function Dashboard() {
     return { startDate, endDate };
   };
 
-  // Filtrer les données selon la période
+  // Filtrer les ventes selon la période
   const { startDate, endDate } = getPeriodDates(selectedPeriod);
-  const filteredFinancialData = allFinancialData.filter(item => {
-    const itemDate = new Date(item.date);
-    return itemDate >= startDate && itemDate <= endDate;
+  const filteredVentes = ventes.filter(v => {
+    const venteDate = new Date(v.date.split('/').reverse().join('-'));
+    return venteDate >= startDate && venteDate <= endDate;
   });
 
-  // Calculer les métriques filtrées
-  const totalRevenuNet = filteredFinancialData.reduce((sum, d) => sum + d.marge, 0);
-  const totalCA = filteredFinancialData.reduce((sum, d) => sum + d.ca, 0);
-  const totalRevenus = filteredFinancialData.reduce((sum, d) => sum + d.revenus, 0);
-  
+  // Calculer les métriques filtrées à partir des ventes réelles
+  const totalCA = filteredVentes.reduce((sum, v) => sum + v.prix, 0);
+  const totalRevenuNet = filteredVentes.reduce((sum, v) => sum + v.marge, 0);
+  const totalRevenus = filteredVentes.reduce((sum, v) => sum + (v.prix - v.cout), 0);
+  const margeMoyenne = filteredVentes.length > 0 ? (filteredVentes.reduce((sum, v) => sum + v.margePourcent, 0) / filteredVentes.length) : 0;
+
   // Calculer les tendances (mock - basé sur la période précédente)
   const getTendance = (current: number, previous: number): number => {
     if (previous === 0) return 0;
@@ -139,7 +140,7 @@ export function Dashboard() {
   };
 
   // Simuler les données de la période précédente pour les tendances
-  const previousPeriodData = allFinancialData.slice(0, Math.max(0, filteredFinancialData.length - 1));
+  const previousPeriodData = allFinancialData.slice(0, Math.max(0, filteredVentes.length - 1));
   const previousCA = previousPeriodData.reduce((sum, d) => sum + d.ca, 0);
   const previousRevenus = previousPeriodData.reduce((sum, d) => sum + d.revenus, 0);
   const previousMarge = previousPeriodData.reduce((sum, d) => sum + d.marge, 0);
@@ -455,7 +456,7 @@ export function Dashboard() {
             </div>
             <div className="h-80 w-full">
               <ResponsiveContainer width="100%" height="100%">
-                <AreaChart data={filteredFinancialData} margin={{ top: 20, right: 30, left: 0, bottom: 0 }}>
+                <AreaChart data={filteredVentes} margin={{ top: 20, right: 30, left: 0, bottom: 0 }}>
                   <defs>
                     <linearGradient id="colorCA" x1="0" y1="0" x2="0" y2="1">
                       <stop offset="5%" stopColor="#6366f1" stopOpacity={0.7}/>

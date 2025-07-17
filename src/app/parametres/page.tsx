@@ -34,8 +34,10 @@ import {
 } from "lucide-react";
 import AbonnementPage from "../abonnement/page";
 import { motion, AnimatePresence } from "framer-motion";
+import { useAuth } from "@/contexts/AuthContext";
 
 export default function ParametresPage() {
+  const { user } = useAuth();
   const [activeTab, setActiveTab] = useState("compte");
   const [showPassword, setShowPassword] = useState(false);
   const [showNewPassword, setShowNewPassword] = useState(false);
@@ -49,11 +51,11 @@ export default function ParametresPage() {
     rapports: true
   });
   const [formData, setFormData] = useState({
-    nom: "Jean Dupont",
-    email: "jean.dupont@email.com",
-    telephone: "+33 6 12 34 56 78",
-    adresse: "123 Rue de la Paix, 75001 Paris",
-    entreprise: "Ma Boutique Vinted"
+    nom: user?.user_metadata?.full_name || "",
+    email: user?.email || user?.user_metadata?.email || "",
+    telephone: "",
+    adresse: "",
+    entreprise: ""
   });
   const [messageSucces, setMessageSucces] = useState("");
 

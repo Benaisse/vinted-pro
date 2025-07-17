@@ -5,6 +5,8 @@ import { Article } from "@/components/ArticleFormModal";
 import { inventaire as inventaireData } from "@/data/inventaire";
 import { ventes as ventesData } from "@/data/ventes";
 import { stock as stockData } from "@/data/stock";
+import { supabase } from '@/lib/supabaseClient';
+import { useAuth } from './AuthContext';
 
 // Types pour les données
 interface Vente {
@@ -78,11 +80,78 @@ export function useData() {
 }
 
 export const DataProvider = ({ children }: { children: React.ReactNode }) => {
-  // Initialisation par défaut avec les données mock
-  const [articles, setArticles] = useState<Article[]>(inventaireData);
-  const [ventes, setVentes] = useState<Vente[]>(ventesData.map(toVente));
-  const [stock, setStock] = useState<StockItem[]>(stockData);
+  const { user, loading: authLoading } = useAuth();
+  const [articles, setArticles] = useState<Article[]>([]);
+  const [ventes, setVentes] = useState<Vente[]>([]);
+  const [stock, setStock] = useState<StockItem[]>([]);
   const [isLoaded, setIsLoaded] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  // Charger l'inventaire dynamiquement depuis Supabase
+  useEffect(() => {
+    if (!user || authLoading) return;
+    setIsLoaded(false);
+    setError(null);
+    const fetchArticles = async () => {
+      const { data, error } = await supabase
+        .from('inventaire')
+        .select('*')
+        .eq('user_id', user.id)
+        .order('created_at', { ascending: false });
+      if (error) {
+        setError('Erreur lors du chargement de l\'inventaire.');
+        setArticles([]);
+      } else {
+        setArticles(data || []);
+      }
+      setIsLoaded(true);
+    };
+    fetchArticles();
+  }, [user, authLoading]);
+
+  // Charger le stock dynamiquement depuis Supabase
+  useEffect(() => {
+    if (!user || authLoading) return;
+    setIsLoaded(false);
+    setError(null);
+    const fetchStock = async () => {
+      const { data, error } = await supabase
+        .from('stock')
+        .select('*')
+        .eq('user_id', user.id)
+        .order('created_at', { ascending: false });
+      if (error) {
+        setError('Erreur lors du chargement du stock.');
+        setStock([]);
+      } else {
+        setStock(data || []);
+      }
+      setIsLoaded(true);
+    };
+    fetchStock();
+  }, [user, authLoading]);
+
+  // Charger les ventes dynamiquement depuis Supabase
+  useEffect(() => {
+    if (!user || authLoading) return;
+    setIsLoaded(false);
+    setError(null);
+    const fetchVentes = async () => {
+      const { data, error } = await supabase
+        .from('ventes')
+        .select('*')
+        .eq('user_id', user.id)
+        .order('created_at', { ascending: false });
+      if (error) {
+        setError('Erreur lors du chargement des ventes.');
+        setVentes([]);
+      } else {
+        setVentes(data || []);
+      }
+      setIsLoaded(true);
+    };
+    fetchVentes();
+  }, [user, authLoading]);
 
   // Calcul des statistiques en temps réel
   const stats = {
@@ -96,35 +165,54 @@ export const DataProvider = ({ children }: { children: React.ReactNode }) => {
     stockRupture: stock.filter(s => s.statut === "Rupture").length,
   };
 
-  // Actions pour les articles
-  const addArticle = (article: Article) => {
-    const newArticle = {
-      ...article,
-      id: Date.now(),
-      dateAjout: new Date().toLocaleDateString('fr-FR'),
-      vues: 0,
-      likes: 0,
-      marge: article.prix - article.cout,
-      margePourcent: Math.round(((article.prix - article.cout) / article.prix) * 100)
-    };
-    setArticles(prev => [newArticle, ...prev]);
+  // Actions pour les articles (INVENTAIRE)
+  const addArticle = async (article: Article) => {
+    setError(null);
+    try {
+      const { data, error } = await supabase
+        .from('inventaire')
+        .insert([{ ...article, user_id: user.id }])
+        .select();
+      if (error) throw error;
+      if (data && data.length > 0) {
+        setArticles(prev => [data[0], ...prev]);
+      }
+    } catch (err: any) {
+      setError('Erreur lors de l\'ajout de l\'article.');
+    }
   };
 
-  const updateArticle = (article: Article) => {
-    setArticles(prev => prev.map(a => 
-      a.id === article.id 
-        ? { 
-            ...a, 
-            ...article,
-            marge: article.prix - article.cout,
-            margePourcent: Math.round(((article.prix - article.cout) / article.prix) * 100)
-          } 
-        : a
-    ));
+  const updateArticle = async (article: Article) => {
+    setError(null);
+    try {
+      const { data, error } = await supabase
+        .from('inventaire')
+        .update({ ...article })
+        .eq('id', article.id)
+        .eq('user_id', user.id)
+        .select();
+      if (error) throw error;
+      if (data && data.length > 0) {
+        setArticles(prev => prev.map(a => a.id === article.id ? data[0] : a));
+      }
+    } catch (err: any) {
+      setError('Erreur lors de la modification de l\'article.');
+    }
   };
 
-  const deleteArticle = (id: number) => {
-    setArticles(prev => prev.filter(a => a.id !== id));
+  const deleteArticle = async (id: number) => {
+    setError(null);
+    try {
+      const { error } = await supabase
+        .from('inventaire')
+        .delete()
+        .eq('id', id)
+        .eq('user_id', user.id);
+      if (error) throw error;
+      setArticles(prev => prev.filter(a => a.id !== id));
+    } catch (err: any) {
+      setError('Erreur lors de la suppression de l\'article.');
+    }
   };
 
   // Actions pour les ventes
@@ -156,32 +244,53 @@ export const DataProvider = ({ children }: { children: React.ReactNode }) => {
   };
 
   // Actions pour le stock
-  const updateStock = (item: StockItem) => {
-    setStock(prev => prev.map(s => 
-      s.id === item.id 
-        ? { 
-            ...s, 
-            ...item,
-            valeurTotale: item.quantite * item.prixUnitaire,
-            statut: item.quantite === 0 ? "Rupture" : item.quantite <= item.seuilAlerte ? "Faible" : "Normal"
-          } 
-        : s
-    ));
+  const addStockItem = async (item: Omit<StockItem, 'id'>) => {
+    setError(null);
+    try {
+      const { data, error } = await supabase
+        .from('stock')
+        .insert([{ ...item, user_id: user.id }])
+        .select();
+      if (error) throw error;
+      if (data && data.length > 0) {
+        setStock(prev => [data[0], ...prev]);
+      }
+    } catch (err: any) {
+      setError('Erreur lors de l\'ajout au stock.');
+    }
   };
 
-  const addStockItem = (item: Omit<StockItem, 'id'>) => {
-    const newItem: StockItem = {
-      ...item,
-      id: Date.now(),
-      valeurTotale: item.quantite * item.prixUnitaire,
-      statut: item.quantite === 0 ? "Rupture" : item.quantite <= item.seuilAlerte ? "Faible" : "Normal",
-      derniereMiseAJour: new Date().toLocaleDateString('fr-FR')
-    };
-    setStock(prev => [newItem, ...prev]);
+  const updateStock = async (item: StockItem) => {
+    setError(null);
+    try {
+      const { data, error } = await supabase
+        .from('stock')
+        .update({ ...item })
+        .eq('id', item.id)
+        .eq('user_id', user.id)
+        .select();
+      if (error) throw error;
+      if (data && data.length > 0) {
+        setStock(prev => prev.map(s => s.id === item.id ? data[0] : s));
+      }
+    } catch (err: any) {
+      setError('Erreur lors de la modification du stock.');
+    }
   };
 
-  const deleteStockItem = (id: number) => {
-    setStock(prev => prev.filter(s => s.id !== id));
+  const deleteStockItem = async (id: number) => {
+    setError(null);
+    try {
+      const { error } = await supabase
+        .from('stock')
+        .delete()
+        .eq('id', id)
+        .eq('user_id', user.id);
+      if (error) throw error;
+      setStock(prev => prev.filter(s => s.id !== id));
+    } catch (err: any) {
+      setError('Erreur lors de la suppression du stock.');
+    }
   };
 
   // Actions synchronisées
@@ -274,7 +383,8 @@ export const DataProvider = ({ children }: { children: React.ReactNode }) => {
     }
   }, []);
 
-  if (!isLoaded) return null;
+  if (!isLoaded && !authLoading) return <div>Chargement des ventes...</div>;
+  if (error) return <div style={{ color: 'red', padding: 16 }}>{error}</div>;
 
   return (
     <DataContext.Provider value={{

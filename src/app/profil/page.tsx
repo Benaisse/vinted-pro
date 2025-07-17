@@ -22,12 +22,7 @@ export default function ProfilPage() {
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
   const [editAddress, setEditAddress] = useState(false);
-  const [address, setAddress] = useState({
-    street: "12 Rue de la Mode",
-    city: "Paris",
-    postal: "75001",
-    country: "France"
-  });
+  const [address, setAddress] = useState({ street: '', city: '', postal: '', country: '' });
   const [addressBackup, setAddressBackup] = useState(address);
   const [savingAddress, setSavingAddress] = useState(false);
   const [stats, setStats] = useState({ total_sales: 0, active_listings: 0, average_rating: 0, reviews_count: 0 });
@@ -44,24 +39,47 @@ export default function ProfilPage() {
   const [notifError, setNotifError] = useState("");
   const [notifSuccess, setNotifSuccess] = useState("");
   const [showAllReviews, setShowAllReviews] = useState(false);
+  const [subscription, setSubscription] = useState<{ plan: string; status: string } | null>(null);
 
   useEffect(() => {
-    async function fetchStatsAndReviews() {
+    async function fetchStatsAndReviewsAndAddressAndSubscription() {
       setLoadingStats(true);
       try {
         if (user) {
+          // Stats
           const { data: statsData } = await supabase
             .from('user_stats')
             .select('*')
             .eq('user_id', user.id)
             .single();
           if (statsData) setStats(statsData);
+          // Reviews
           const { data: reviewsData } = await supabase
             .from('reviews')
             .select('*')
             .eq('user_id', user.id)
             .order('date', { ascending: false });
           if (reviewsData) setReviews(reviewsData);
+          // Adresse
+          const { data: addressData } = await supabase
+            .from('user_addresses')
+            .select('*')
+            .eq('user_id', user.id)
+            .single();
+          if (addressData) setAddress({
+            street: addressData.street || '',
+            city: addressData.city || '',
+            postal: addressData.postal || '',
+            country: addressData.country || ''
+          });
+          // Abonnement
+          const { data: subData } = await supabase
+            .from('user_subscriptions')
+            .select('plan, status')
+            .eq('user_id', user.id)
+            .single();
+          if (subData) setSubscription(subData);
+          else setSubscription({ plan: 'free', status: 'active' });
         }
       } catch (e) {
         // Optionally handle error
@@ -69,7 +87,7 @@ export default function ProfilPage() {
         setLoadingStats(false);
       }
     }
-    fetchStatsAndReviews();
+    fetchStatsAndReviewsAndAddressAndSubscription();
   }, [user]);
 
   useEffect(() => {
@@ -194,6 +212,23 @@ export default function ProfilPage() {
       setNotifError(err.message || "Erreur lors de la sauvegarde des préférences");
     } finally {
       setSavingNotifications(false);
+    }
+  };
+
+  const handleUpgradeToPremium = async () => {
+    if (!user) return;
+    try {
+      const { error } = await supabase
+        .from('user_subscriptions')
+        .upsert([
+          { user_id: user.id, plan: 'premium', status: 'active', start_date: new Date().toISOString() }
+        ], { onConflict: 'user_id' });
+      if (error) throw error;
+      setSubscription({ plan: 'premium', status: 'active' });
+      setSuccess('Vous êtes maintenant Premium !');
+      setTimeout(() => setSuccess(''), 2500);
+    } catch (err: any) {
+      setError(err.message || 'Erreur lors du passage à Premium');
     }
   };
 
@@ -480,8 +515,14 @@ export default function ProfilPage() {
               <p className="text-slate-500 text-sm">Gérez votre plan et vos informations de paiement.</p>
             </div>
             <div className="bg-purple-50 rounded-xl p-4 mb-4">
-              <div className="font-medium text-purple-700 mb-1">Plan Actuel : Gratuit</div>
-              <div className="text-xs text-purple-600">Limité à 50 articles et 25 ventes/mois.</div>
+              <div className="font-medium text-purple-700 mb-1">
+                Plan Actuel : {subscription?.plan === 'premium' ? 'Premium' : 'Gratuit'}
+              </div>
+              <div className="text-xs text-purple-600">
+                {subscription?.plan === 'premium'
+                  ? 'Articles et ventes illimités, alertes IA, analytics avancées.'
+                  : 'Limité à 50 articles et 25 ventes/mois.'}
+              </div>
             </div>
             <div className="bg-gradient-to-r from-purple-500 to-pink-500 rounded-xl p-6 text-white mb-4">
               <div className="flex items-center justify-between mb-2">
@@ -493,7 +534,13 @@ export default function ProfilPage() {
                 <li>✓ Alertes IA personnalisées</li>
                 <li>✓ Analytics avancées</li>
               </ul>
-              <button className="w-full bg-white/90 text-purple-700 font-semibold rounded-xl py-2 hover:bg-white transition">Passer à Premium</button>
+              <button
+                className="w-full bg-white/90 text-purple-700 font-semibold rounded-xl py-2 hover:bg-white transition"
+                onClick={handleUpgradeToPremium}
+                disabled={subscription?.plan === 'premium'}
+              >
+                {subscription?.plan === 'premium' ? 'Déjà Premium' : 'Passer à Premium'}
+              </button>
             </div>
             <div className="bg-slate-100 rounded-xl p-4">
               <div className="text-sm text-slate-700 mb-1">Méthode de paiement</div>

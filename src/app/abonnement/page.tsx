@@ -3,10 +3,55 @@
 import { motion, AnimatePresence } from "framer-motion";
 import { Crown, CheckCircle, XCircle, HelpCircle, Mail, Star, Zap, Shield, TrendingUp, Users, ArrowRight, Sparkles } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { useAuth } from "@/contexts/AuthContext";
+import { useEffect, useState } from "react";
+import { supabase } from "@/lib/supabaseClient";
 
 export default function AbonnementPage() {
-  // Mock : l'utilisateur est sur le plan gratuit
-  const isPremium = false;
+  const { user } = useAuth();
+  const [subscription, setSubscription] = useState<{ plan: string; status: string } | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [success, setSuccess] = useState("");
+  const [error, setError] = useState("");
+
+  useEffect(() => {
+    async function fetchSubscription() {
+      setLoading(true);
+      try {
+        if (user) {
+          const { data: subData } = await supabase
+            .from('user_subscriptions')
+            .select('plan, status')
+            .eq('user_id', user.id)
+            .single();
+          if (subData) setSubscription(subData);
+          else setSubscription({ plan: 'free', status: 'active' });
+        }
+      } catch (e) {
+        setError("Erreur lors de la récupération de l'abonnement");
+      } finally {
+        setLoading(false);
+      }
+    }
+    fetchSubscription();
+  }, [user]);
+
+  const handleUpgradeToPremium = async () => {
+    if (!user) return;
+    try {
+      const { error } = await supabase
+        .from('user_subscriptions')
+        .upsert([
+          { user_id: user.id, plan: 'premium', status: 'active', start_date: new Date().toISOString() }
+        ], { onConflict: 'user_id' });
+      if (error) throw error;
+      setSubscription({ plan: 'premium', status: 'active' });
+      setSuccess('Vous êtes maintenant Premium !');
+      setTimeout(() => setSuccess(''), 2500);
+    } catch (err: any) {
+      setError(err.message || 'Erreur lors du passage à Premium');
+    }
+  };
 
   return (
     <AnimatePresence mode="wait">
@@ -43,7 +88,9 @@ export default function AbonnementPage() {
                 <span className="text-xl font-bold group-hover:scale-105 transition-transform duration-200">Offre limitée : -35% sur Premium</span>
                 <Sparkles className="w-6 h-6 text-yellow-300 group-hover:rotate-12 transition-transform duration-200" />
               </div>
-              <p className="text-indigo-100 group-hover:text-white transition-colors duration-200">Votre formule actuelle : <span className="font-semibold">{isPremium ? "Premium" : "Gratuit"}</span></p>
+              <p className="text-indigo-100 group-hover:text-white transition-colors duration-200">
+                Votre formule actuelle : <span className="font-semibold">{subscription?.plan === 'premium' ? 'Premium' : 'Gratuit'}</span>
+              </p>
             </div>
           </motion.div>
 
@@ -142,8 +189,10 @@ export default function AbonnementPage() {
               
               <Button 
                 className="w-full bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 text-white shadow-lg hover:shadow-xl transition-all duration-200 hover:scale-105"
+                onClick={handleUpgradeToPremium}
+                disabled={subscription?.plan === 'premium'}
               >
-                <span>Passer à Premium</span>
+                {subscription?.plan === 'premium' ? 'Déjà Premium' : 'Passer à Premium'}
                 <ArrowRight className="w-4 h-4 ml-2 group-hover:translate-x-1 transition-transform duration-200" />
               </Button>
             </div>
@@ -253,6 +302,8 @@ export default function AbonnementPage() {
             </div>
           </motion.div>
         </div>
+        {success && <div className="text-green-600 text-center my-2">{success}</div>}
+        {error && <div className="text-red-600 text-center my-2">{error}</div>}
       </motion.div>
     </AnimatePresence>
   );

@@ -31,6 +31,7 @@ import { ArticleFormModal } from "@/components/ArticleFormModal";
 import { AIAssistant } from "@/components/AIAssistant";
 import { useRouter } from "next/navigation";
 import { useData } from "@/contexts/DataContext";
+import { useAuth } from "@/contexts/AuthContext";
 
 export function Header() {
   const [search, setSearch] = useState("");
@@ -42,6 +43,7 @@ export function Header() {
   const [aiAssistantOpen, setAiAssistantOpen] = useState(false);
   const router = useRouter();
   const { addArticle, stats } = useData();
+  const { signOut, user } = useAuth();
   const [isMounted, setIsMounted] = useState(false);
   useEffect(() => { setIsMounted(true); }, []);
   if (!isMounted) return null;
@@ -51,6 +53,24 @@ export function Header() {
     addArticle(article);
     console.log("Article ajouté avec succès:", article);
   };
+
+  // Handler pour la déconnexion
+  const handleLogout = async () => {
+    await signOut();
+    router.replace('/login');
+  };
+
+  // Fonction utilitaire pour extraire les initiales de l'utilisateur
+  function getInitials() {
+    if (user?.user_metadata?.full_name) {
+      return user.user_metadata.full_name.split(' ').map((n: string) => n[0]).join('').toUpperCase().slice(0,2);
+    }
+    if (user?.email) {
+      const [name] = user.email.split('@');
+      return name.split(/[.\-_]/).map((n: string) => n[0]).join('').toUpperCase().slice(0,2);
+    }
+    return 'U';
+  }
 
   return (
     <header className="bg-white shadow-sm border-b h-16 flex items-center justify-between px-2 sm:px-6">
@@ -323,7 +343,7 @@ export function Header() {
             <button className="relative focus:outline-none group" aria-label="Profil utilisateur">
               <Avatar className="h-8 w-8">
                 <AvatarImage src="/placeholder.svg?height=40&width=40" alt="Avatar utilisateur" />
-                <AvatarFallback>JD</AvatarFallback>
+                <AvatarFallback>{getInitials()}</AvatarFallback>
               </Avatar>
               <span className="absolute bottom-0 right-0 w-3 h-3 bg-green-400 border-2 border-white rounded-full"></span>
             </button>
@@ -335,12 +355,11 @@ export function Header() {
                 <Avatar className="h-12 w-12">
                   <AvatarImage src="/placeholder.svg?height=48&width=48" />
                   <AvatarFallback className="bg-gradient-to-r from-purple-500 to-pink-500 text-white font-semibold text-lg">
-                    JD
+                    {getInitials()}
                   </AvatarFallback>
                 </Avatar>
                 <div className="flex-1">
-                  <p className="font-semibold">John Doe</p>
-                  <p className="text-sm text-gray-500">john.doe@email.com</p>
+                  <p className="font-semibold">{user?.email || user?.user_metadata?.email || 'Utilisateur'}</p>
                   <div className="flex items-center space-x-1 mt-1">
                     <Crown className="h-3 w-3 text-yellow-500" />
                     <span className="text-xs text-yellow-600 font-medium">Plan Gratuit</span>
@@ -368,7 +387,7 @@ export function Header() {
             </div>
 
             <DropdownMenuSeparator />
-            <DropdownMenuItem>
+            <DropdownMenuItem onClick={() => router.push('/profil')}>
               <User className="mr-2 h-4 w-4" />
               Mon profil
             </DropdownMenuItem>
@@ -381,7 +400,7 @@ export function Header() {
               Passer à Premium
             </DropdownMenuItem>
             <DropdownMenuSeparator />
-            <DropdownMenuItem className="text-red-600">
+            <DropdownMenuItem className="text-red-600" onClick={handleLogout}>
               <LogOut className="mr-2 h-4 w-4" />
               Déconnexion
             </DropdownMenuItem>
