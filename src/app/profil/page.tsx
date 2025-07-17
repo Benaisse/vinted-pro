@@ -7,6 +7,9 @@ import { Crown, LogOut, Edit, Save, X } from "lucide-react";
 import { supabase } from "@/lib/supabaseClient";
 
 export default function ProfilPage() {
+  console.log("SUPABASE_URL (client):", process.env.NEXT_PUBLIC_SUPABASE_URL);
+  console.log("SUPABASE_KEY (client):", process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY);
+  console.log("TEST_VAR:", process.env.NEXT_PUBLIC_TEST_VAR);
   const { user, signOut, loading } = useAuth();
   const router = useRouter();
   const [editGeneral, setEditGeneral] = useState(false);
@@ -30,6 +33,17 @@ export default function ProfilPage() {
   const [stats, setStats] = useState({ total_sales: 0, active_listings: 0, average_rating: 0, reviews_count: 0 });
   const [reviews, setReviews] = useState<any[]>([]);
   const [loadingStats, setLoadingStats] = useState(true);
+  const [currentPassword, setCurrentPassword] = useState("");
+  const [newPassword, setNewPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
+  const [passwordError, setPasswordError] = useState("");
+  const [passwordSuccess, setPasswordSuccess] = useState("");
+  const [changingPassword, setChangingPassword] = useState(false);
+  const [notifications, setNotifications] = useState({ email: true, push: false });
+  const [savingNotifications, setSavingNotifications] = useState(false);
+  const [notifError, setNotifError] = useState("");
+  const [notifSuccess, setNotifSuccess] = useState("");
+  const [showAllReviews, setShowAllReviews] = useState(false);
 
   useEffect(() => {
     async function fetchStatsAndReviews() {
@@ -57,6 +71,22 @@ export default function ProfilPage() {
     }
     fetchStatsAndReviews();
   }, [user]);
+
+  useEffect(() => {
+    async function testSupabase() {
+      try {
+        const { data, error } = await supabase.from("ventes").select("*").limit(1);
+        if (error) {
+          console.error("❌ Supabase error:", error.message);
+        } else {
+          console.log("✅ Supabase connecté, données:", data);
+        }
+      } catch (e) {
+        console.error("❌ Exception Supabase:", e);
+      }
+    }
+    testSupabase();
+  }, []);
 
   React.useEffect(() => {
     if (!loading && !user) router.replace("/login");
@@ -118,6 +148,53 @@ export default function ProfilPage() {
     setAvatarFile(null);
     setError("");
     setSuccess("");
+  };
+
+  // Gestion du changement de mot de passe
+  const handleChangePassword = async () => {
+    setPasswordError("");
+    setPasswordSuccess("");
+    if (!newPassword || newPassword.length < 6) {
+      setPasswordError("Le nouveau mot de passe doit contenir au moins 6 caractères.");
+      return;
+    }
+    if (newPassword !== confirmPassword) {
+      setPasswordError("Les mots de passe ne correspondent pas.");
+      return;
+    }
+    setChangingPassword(true);
+    try {
+      const { error } = await supabase.auth.updateUser({ password: newPassword });
+      if (error) throw error;
+      setPasswordSuccess("Mot de passe changé avec succès !");
+      setCurrentPassword("");
+      setNewPassword("");
+      setConfirmPassword("");
+      setTimeout(() => setPasswordSuccess("") , 2500);
+    } catch (err: any) {
+      setPasswordError(err.message || "Erreur lors du changement de mot de passe");
+    } finally {
+      setChangingPassword(false);
+    }
+  };
+
+  // Gestion des préférences de notifications
+  const handleSaveNotifications = async () => {
+    setNotifError("");
+    setNotifSuccess("");
+    setSavingNotifications(true);
+    try {
+      if (user) {
+        const { error } = await supabase.auth.updateUser({ data: { notifications } });
+        if (error) throw error;
+        setNotifSuccess("Préférences enregistrées !");
+        setTimeout(() => setNotifSuccess("") , 2500);
+      }
+    } catch (err: any) {
+      setNotifError(err.message || "Erreur lors de la sauvegarde des préférences");
+    } finally {
+      setSavingNotifications(false);
+    }
   };
 
   return (
@@ -268,9 +345,32 @@ export default function ProfilPage() {
                   className="flex items-center gap-1 px-3 py-1.5 rounded-xl bg-green-50 hover:bg-green-100 text-sm font-medium border border-green-100 text-green-700 shadow-sm transition"
                   onClick={async () => {
                     setSavingAddress(true);
-                    // TODO: sauvegarde dans la base si besoin
-                    setEditAddress(false);
-                    setSavingAddress(false);
+                    setError("");
+                    setSuccess("");
+                    try {
+                      if (user) {
+                        // On suppose une table 'user_addresses' avec user_id, street, city, postal, country
+                        const { error: upsertError } = await supabase
+                          .from('user_addresses')
+                          .upsert([
+                            {
+                              user_id: user.id,
+                              street: address.street,
+                              city: address.city,
+                              postal: address.postal,
+                              country: address.country
+                            }
+                          ], { onConflict: 'user_id' });
+                        if (upsertError) throw upsertError;
+                        setSuccess("Adresse enregistrée avec succès !");
+                        setTimeout(() => setSuccess("") , 2500);
+                      }
+                      setEditAddress(false);
+                    } catch (err: any) {
+                      setError(err.message || "Erreur lors de la sauvegarde de l'adresse");
+                    } finally {
+                      setSavingAddress(false);
+                    }
                   }}
                   disabled={savingAddress}
                 >
@@ -344,25 +444,33 @@ export default function ProfilPage() {
             <div className="space-y-4">
               <div>
                 <label className="block text-sm font-medium text-slate-700 mb-1">Mot de passe actuel</label>
-                <input type="password" value="********" disabled className="w-full border rounded-xl px-3 py-2 bg-slate-100 text-slate-500" />
+                <input type="password" value={currentPassword} onChange={e => setCurrentPassword(e.target.value)} className="w-full border rounded-xl px-3 py-2" autoComplete="current-password" />
               </div>
               <div>
                 <label className="block text-sm font-medium text-slate-700 mb-1">Nouveau mot de passe</label>
-                <input type="password" value="" disabled className="w-full border rounded-xl px-3 py-2 bg-slate-100 text-slate-500" />
+                <input type="password" value={newPassword} onChange={e => setNewPassword(e.target.value)} className="w-full border rounded-xl px-3 py-2" autoComplete="new-password" />
               </div>
               <div>
                 <label className="block text-sm font-medium text-slate-700 mb-1">Confirmer le nouveau mot de passe</label>
-                <input type="password" value="" disabled className="w-full border rounded-xl px-3 py-2 bg-slate-100 text-slate-500" />
+                <input type="password" value={confirmPassword} onChange={e => setConfirmPassword(e.target.value)} className="w-full border rounded-xl px-3 py-2" autoComplete="new-password" />
               </div>
-              <button className="w-full bg-gray-900 text-white py-2 rounded-xl font-semibold mt-2 opacity-60 cursor-not-allowed">Changer le mot de passe</button>
+              {passwordError && <div className="text-red-600 text-sm mb-2">{passwordError}</div>}
+              {passwordSuccess && <div className="text-green-600 text-sm mb-2">{passwordSuccess}</div>}
+              <button onClick={handleChangePassword} disabled={changingPassword} className="w-full bg-gray-900 text-white py-2 rounded-xl font-semibold mt-2 hover:bg-gray-800 transition disabled:opacity-60">
+                {changingPassword ? "Changement..." : "Changer le mot de passe"}
+              </button>
               <div className="flex items-center gap-2 mt-4">
-                <input type="checkbox" checked disabled />
+                <input type="checkbox" checked={notifications.email} onChange={() => setNotifications(n => ({ ...n, email: !n.email }))} />
                 <span className="text-sm text-slate-600">Notifications par e-mail</span>
               </div>
               <div className="flex items-center gap-2">
-                <input type="checkbox" disabled />
+                <input type="checkbox" checked={notifications.push} onChange={() => setNotifications(n => ({ ...n, push: !n.push }))} />
                 <span className="text-sm text-slate-600">Notifications push</span>
               </div>
+             {(notifError || notifSuccess) && <div className={notifError ? "text-red-600 text-sm mb-2" : "text-green-600 text-sm mb-2"}>{notifError || notifSuccess}</div>}
+             <button onClick={handleSaveNotifications} disabled={savingNotifications} className="w-full bg-indigo-600 text-white py-2 rounded-xl font-semibold mt-2 hover:bg-indigo-700 transition disabled:opacity-60">
+               {savingNotifications ? "Enregistrement..." : "Enregistrer les préférences"}
+             </button>
             </div>
           </section>
           {/* Abonnement */}
@@ -435,7 +543,7 @@ export default function ProfilPage() {
             ) : (
               <div className="space-y-4">
                 {reviews.length === 0 && <div className="text-slate-400 text-sm">Aucun avis pour le moment.</div>}
-                {reviews.slice(0, 2).map((review, idx) => (
+                {(showAllReviews ? reviews : reviews.slice(0, 2)).map((review, idx) => (
                   <div key={idx} className="bg-slate-50 rounded-xl p-4">
                     <div className="flex items-center gap-2 mb-1">
                       <span className="font-bold">{review.author}</span>
@@ -450,7 +558,9 @@ export default function ProfilPage() {
                   </div>
                 ))}
                 {reviews.length > 2 && (
-                  <button className="w-full text-blue-600 hover:underline text-sm mt-2">Voir tous les avis</button>
+                  <button className="w-full text-blue-600 hover:underline text-sm mt-2" onClick={() => setShowAllReviews(v => !v)}>
+                    {showAllReviews ? 'Réduire' : 'Voir tous les avis'}
+                  </button>
                 )}
               </div>
             )}

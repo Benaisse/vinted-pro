@@ -15,6 +15,7 @@ const AuthContext = createContext<AuthContextType | undefined>(undefined);
 export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   const [user, setUser] = useState<any>(null);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     if (!supabase) {
@@ -23,16 +24,24 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
       return;
     }
     const getUser = async () => {
-      const { data, error } = await supabase.auth.getUser();
-      setUser(data?.user ?? null);
-      setLoading(false);
+      try {
+        const { data, error } = await supabase.auth.getUser();
+        if (error) throw error;
+        setUser(data?.user ?? null);
+      } catch (err: any) {
+        setError('Erreur lors de la récupération de l’utilisateur.');
+        setUser(null);
+        console.error(err);
+      } finally {
+        setLoading(false);
+      }
     };
     getUser();
-    const listener = supabase.auth.onAuthStateChange((_event, session) => {
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event: any, session: any) => {
       setUser(session?.user ?? null);
     });
     return () => {
-      listener.unsubscribe();
+      subscription.unsubscribe();
     };
   }, []);
 
@@ -47,36 +56,69 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
 
   const signUp = async (email: string, password: string) => {
     setLoading(true);
-    const { data, error } = await supabase.auth.signUp({ email, password });
-    setLoading(false);
-    if (error) throw error;
-    return data;
+    setError(null);
+    try {
+      const { data, error } = await supabase.auth.signUp({ email, password });
+      if (error) throw error;
+      return data;
+    } catch (err: any) {
+      setError('Erreur lors de l’inscription.');
+      console.error(err);
+      throw err;
+    } finally {
+      setLoading(false);
+    }
   };
 
   const signIn = async (email: string, password: string) => {
     setLoading(true);
-    const { data, error } = await supabase.auth.signInWithPassword({ email, password });
-    setLoading(false);
-    if (error) throw error;
-    return data;
+    setError(null);
+    try {
+      const { data, error } = await supabase.auth.signInWithPassword({ email, password });
+      if (error) throw error;
+      return data;
+    } catch (err: any) {
+      setError('Erreur lors de la connexion.');
+      console.error(err);
+      throw err;
+    } finally {
+      setLoading(false);
+    }
   };
 
   const signOut = async () => {
     setLoading(true);
-    await supabase.auth.signOut();
-    setUser(null);
-    setLoading(false);
+    setError(null);
+    try {
+      await supabase.auth.signOut();
+      setUser(null);
+    } catch (err: any) {
+      setError('Erreur lors de la déconnexion.');
+      console.error(err);
+      throw err;
+    } finally {
+      setLoading(false);
+    }
   };
 
   const signInWithGoogle = async () => {
     setLoading(true);
-    const { error } = await supabase.auth.signInWithOAuth({ provider: 'google' });
-    setLoading(false);
-    if (error) throw error;
+    setError(null);
+    try {
+      const { error } = await supabase.auth.signInWithOAuth({ provider: 'google' });
+      if (error) throw error;
+    } catch (err: any) {
+      setError('Erreur lors de la connexion Google.');
+      console.error(err);
+      throw err;
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
     <AuthContext.Provider value={{ user, loading, signUp, signIn, signOut, signInWithGoogle }}>
+      {error && <div style={{color: 'red', padding: 8}}>{error}</div>}
       {children}
     </AuthContext.Provider>
   );

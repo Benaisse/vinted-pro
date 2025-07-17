@@ -13,10 +13,41 @@ export function Sidebar() {
   const [collapsed, setCollapsed] = useState(false);
   const [mobileOpen, setMobileOpen] = useState(false);
   const drawerRef = useRef<HTMLDivElement>(null);
+  const closeBtnRef = useRef<HTMLButtonElement>(null);
   const { stats } = useData();
   const [isMounted, setIsMounted] = useState(false);
+  const lastActiveElement = useRef<HTMLElement | null>(null);
 
   useEffect(() => { setIsMounted(true); }, []);
+  useEffect(() => {
+    if (!mobileOpen) return;
+    // Focus trap
+    const focusable = drawerRef.current?.querySelectorAll<HTMLElement>(
+      'button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])'
+    );
+    const first = focusable?.[0];
+    const last = focusable?.[focusable.length - 1];
+    function handleTab(e: KeyboardEvent) {
+      if (e.key !== 'Tab' || !focusable) return;
+      if (e.shiftKey) {
+        if (document.activeElement === first) {
+          e.preventDefault();
+          last?.focus();
+        }
+      } else {
+        if (document.activeElement === last) {
+          e.preventDefault();
+          first?.focus();
+        }
+      }
+    }
+    document.addEventListener('keydown', handleTab);
+    // Focus le bouton fermer à l'ouverture
+    closeBtnRef.current?.focus();
+    return () => {
+      document.removeEventListener('keydown', handleTab);
+    };
+  }, [mobileOpen]);
   useEffect(() => {
     if (!mobileOpen) return;
     const handleRoute = () => setMobileOpen(false);
@@ -30,6 +61,13 @@ export function Sidebar() {
     };
     document.addEventListener("keydown", handleKey);
     return () => document.removeEventListener("keydown", handleKey);
+  }, [mobileOpen]);
+  useEffect(() => {
+    if (mobileOpen) {
+      lastActiveElement.current = document.activeElement as HTMLElement;
+    } else {
+      lastActiveElement.current?.focus();
+    }
   }, [mobileOpen]);
 
   if (!isMounted) return null;
@@ -56,6 +94,7 @@ export function Sidebar() {
           className="fixed inset-0 z-40 bg-black/20 backdrop-blur-sm transition-opacity animate-fade-in md:hidden"
           onClick={() => setMobileOpen(false)}
           aria-label="Fermer le menu"
+          tabIndex={-1}
         />
       )}
       {/* Sidebar modernisé avec glassmorphism */}
@@ -73,9 +112,11 @@ export function Sidebar() {
         tabIndex={-1}
         aria-modal={mobileOpen ? "true" : undefined}
         role={mobileOpen ? "dialog" : undefined}
+        aria-label="Menu principal"
       >
         {/* Bouton hamburger mobile */}
         <button
+          ref={closeBtnRef}
           className="absolute top-4 right-4 z-50 bg-white/80 backdrop-blur-sm rounded-full p-2 shadow-lg border border-slate-200 hover:bg-white hover:shadow-xl hover:scale-110 transition-all duration-200 md:hidden"
           onClick={() => setMobileOpen(false)}
           aria-label="Fermer le menu"

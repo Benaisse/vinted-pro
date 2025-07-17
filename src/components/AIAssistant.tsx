@@ -77,6 +77,9 @@ export function AIAssistant({ isOpen, onClose, context }: AIAssistantProps) {
   const [inputValue, setInputValue] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
+  const inputRef = useRef<HTMLInputElement>(null);
+  const modalRef = useRef<HTMLDivElement>(null);
+  const lastActiveElement = useRef<HTMLElement | null>(null);
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -85,6 +88,41 @@ export function AIAssistant({ isOpen, onClose, context }: AIAssistantProps) {
   useEffect(() => {
     scrollToBottom();
   }, [messages]);
+
+  useEffect(() => {
+    if (isOpen) {
+      lastActiveElement.current = document.activeElement as HTMLElement;
+      setTimeout(() => {
+        inputRef.current?.focus();
+      }, 50);
+      // Focus trap
+      const handleTab = (e: KeyboardEvent) => {
+        if (!modalRef.current) return;
+        const focusable = modalRef.current.querySelectorAll<HTMLElement>(
+          'button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])'
+        );
+        const first = focusable[0];
+        const last = focusable[focusable.length - 1];
+        if (e.key === 'Tab') {
+          if (e.shiftKey) {
+            if (document.activeElement === first) {
+              e.preventDefault();
+              last.focus();
+            }
+          } else {
+            if (document.activeElement === last) {
+              e.preventDefault();
+              first.focus();
+            }
+          }
+        }
+      };
+      document.addEventListener('keydown', handleTab);
+      return () => document.removeEventListener('keydown', handleTab);
+    } else {
+      lastActiveElement.current?.focus();
+    }
+  }, [isOpen]);
 
   const sendMessage = async (content: string) => {
     if (!content.trim()) return;
@@ -157,14 +195,19 @@ export function AIAssistant({ isOpen, onClose, context }: AIAssistantProps) {
           exit={{ opacity: 0 }}
           className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4"
           onClick={onClose}
+          aria-label="Fermer l’assistant AI"
         >
           <motion.div
+            ref={modalRef}
             initial={{ scale: 0.9, opacity: 0, y: 20 }}
             animate={{ scale: 1, opacity: 1, y: 0 }}
             exit={{ scale: 0.9, opacity: 0, y: 20 }}
             transition={{ type: "spring", damping: 25, stiffness: 300 }}
             className="bg-white rounded-2xl shadow-2xl w-full max-w-4xl h-[80vh] flex flex-col overflow-hidden"
             onClick={(e) => e.stopPropagation()}
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="ai-assistant-title"
           >
             {/* Header */}
             <div className="bg-gradient-to-r from-indigo-600 to-purple-600 text-white p-6 flex items-center justify-between">
@@ -173,7 +216,7 @@ export function AIAssistant({ isOpen, onClose, context }: AIAssistantProps) {
                   <Bot className="w-5 h-5" />
                 </div>
                 <div>
-                  <h2 className="text-xl font-bold">Assistant Vinted Pro</h2>
+                  <h2 id="ai-assistant-title" className="text-xl font-bold">Assistant Vinted Pro</h2>
                   <p className="text-indigo-100 text-sm">Powered by Claude AI</p>
                 </div>
               </div>
@@ -182,6 +225,7 @@ export function AIAssistant({ isOpen, onClose, context }: AIAssistantProps) {
                 size="sm"
                 onClick={onClose}
                 className="text-white hover:bg-white/20"
+                aria-label="Fermer l’assistant AI"
               >
                 <X className="w-5 h-5" />
               </Button>
@@ -269,16 +313,19 @@ export function AIAssistant({ isOpen, onClose, context }: AIAssistantProps) {
             <div className="p-6 border-t border-slate-200">
               <form onSubmit={handleSubmit} className="flex gap-3">
                 <Input
+                  ref={inputRef}
                   value={inputValue}
                   onChange={(e) => setInputValue(e.target.value)}
                   placeholder="Posez votre question à Claude..."
                   className="flex-1 rounded-xl border-slate-300 focus:border-indigo-500 focus:ring-indigo-500"
                   disabled={isLoading}
+                  aria-label="Zone de saisie pour l’assistant AI"
                 />
                 <Button
                   type="submit"
                   disabled={isLoading || !inputValue.trim()}
                   className="bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 text-white rounded-xl px-6 transition-all duration-200 hover:scale-105"
+                  aria-label="Envoyer la question à l’assistant AI"
                 >
                   {isLoading ? (
                     <Loader2 className="w-4 h-4 animate-spin" />

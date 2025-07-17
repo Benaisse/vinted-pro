@@ -1,5 +1,5 @@
 "use client";
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
@@ -52,6 +52,9 @@ export function ArticleFormModal({ open, onClose, onSubmit, article }: ArticleFo
     image: ""
   });
   const [imagePreview, setImagePreview] = useState<string | null>(null);
+  const firstInputRef = useRef<HTMLInputElement>(null);
+  const modalRef = useRef<HTMLDivElement>(null);
+  const lastActiveElement = useRef<HTMLElement | null>(null);
 
   useEffect(() => {
     if (article) {
@@ -86,6 +89,41 @@ export function ArticleFormModal({ open, onClose, onSubmit, article }: ArticleFo
       setImagePreview(null);
     }
   }, [article]);
+
+  useEffect(() => {
+    if (open) {
+      lastActiveElement.current = document.activeElement as HTMLElement;
+      setTimeout(() => {
+        firstInputRef.current?.focus();
+      }, 50);
+      // Focus trap
+      const handleTab = (e: KeyboardEvent) => {
+        if (!modalRef.current) return;
+        const focusable = modalRef.current.querySelectorAll<HTMLElement>(
+          'button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])'
+        );
+        const first = focusable[0];
+        const last = focusable[focusable.length - 1];
+        if (e.key === 'Tab') {
+          if (e.shiftKey) {
+            if (document.activeElement === first) {
+              e.preventDefault();
+              last.focus();
+            }
+          } else {
+            if (document.activeElement === last) {
+              e.preventDefault();
+              first.focus();
+            }
+          }
+        }
+      };
+      document.addEventListener('keydown', handleTab);
+      return () => document.removeEventListener('keydown', handleTab);
+    } else {
+      lastActiveElement.current?.focus();
+    }
+  }, [open]);
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
     const { name, value, type, files } = e.target as any;
@@ -123,15 +161,22 @@ export function ArticleFormModal({ open, onClose, onSubmit, article }: ArticleFo
   if (!open) return null;
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-      <div className="bg-white rounded-xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
+      <div
+        ref={modalRef}
+        className="bg-white rounded-xl max-w-2xl w-full max-h-[90vh] overflow-y-auto"
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="article-modal-title"
+      >
         <div className="p-6 border-b border-gray-200">
           <div className="flex justify-between items-center">
-            <h2 className="text-xl font-semibold text-gray-900">
+            <h2 id="article-modal-title" className="text-xl font-semibold text-gray-900">
               {article ? "Modifier l'article" : "Ajouter un article"}
             </h2>
             <button
               onClick={onClose}
               className="text-gray-400 hover:text-gray-600"
+              aria-label="Fermer le modal"
             >
               <X className="w-6 h-6" />
             </button>
@@ -141,7 +186,7 @@ export function ArticleFormModal({ open, onClose, onSubmit, article }: ArticleFo
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div className="flex flex-col gap-2">
               <label className="block text-sm font-medium text-gray-700 mb-1">Photo *</label>
-              <input type="file" accept="image/*" name="image" onChange={handleInputChange} className="block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100" />
+              <input ref={firstInputRef} type="file" accept="image/*" name="image" onChange={handleInputChange} className="block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100" />
               {imagePreview && (
                 <img src={imagePreview} alt="Aperçu" className="w-32 h-32 object-cover rounded-lg border mt-2" />
               )}
