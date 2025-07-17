@@ -18,7 +18,7 @@ export default function LoginPage() {
   const [googleLoading, setGoogleLoading] = useState(false);
 
   React.useEffect(() => {
-    if (user) router.replace("/dashboard");
+    if (user) router.replace("/");
   }, [user, router]);
 
   const validateEmail = (value: string) =>

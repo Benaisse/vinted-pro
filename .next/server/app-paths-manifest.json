@@ -1,11 +1,9 @@
 {
-  "/page": "app/page.js",
-  "/ventes/page": "app/ventes/page.js",
-  "/inventaire/page": "app/inventaire/page.js",
-  "/stock/page": "app/stock/page.js",
-  "/parametres/page": "app/parametres/page.js",
-  "/abonnement/page": "app/abonnement/page.js",
+  "/_not-found/page": "app/_not-found/page.js",
   "/ai-demo/page": "app/ai-demo/page.js",
   "/ai-analytics/page": "app/ai-analytics/page.js",
-  "/analytics/page": "app/analytics/page.js"
+  "/analytics/page": "app/analytics/page.js",
+  "/login/page": "app/login/page.js",
+  "/register/page": "app/register/page.js",
+  "/page": "app/page.js"
 }
