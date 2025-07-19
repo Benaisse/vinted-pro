@@ -3,17 +3,20 @@
 import {
   Bell,
   Search,
-  User,
   Settings,
-  Package,
   TrendingUp,
   MessageCircle,
-  Heart,
-  Brain,
   ShoppingCart,
-  Crown,
-  LogOut,
   Bot,
+  Trash2,
+  Box,
+  Sparkles,
+  Zap,
+  Activity,
+  Plus,
+  ChevronDown,
+  Filter,
+  Upload
 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -26,391 +29,595 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
-import { useState, useRef, useEffect } from "react";
+import { useState, useRef, useEffect, useCallback } from "react";
 import { ArticleFormModal } from "@/components/ArticleFormModal";
 import { AIAssistant } from "@/components/AIAssistant";
 import { useRouter } from "next/navigation";
 import { useData } from "@/contexts/DataContext";
 import { useAuth } from "@/contexts/AuthContext";
+import { ImportVintedButton } from "./import/ImportVintedButton";
+import { VintedCommand } from "@/types/vinted";
+import { useVintedImport } from "@/hooks/useVintedImport";
+import { 
+  Notification, 
+  NotificationFilter, 
+  ModernNotificationItemProps,
+  ColorClasses 
+} from "@/types/header";
 
-export function Header() {
+interface HeaderProps {
+  showNotifications?: boolean;
+  showMessages?: boolean;
+  showQuickActions?: boolean;
+}
+
+// Composant pour afficher une notification moderne avec types stricts
+function ModernNotificationItem({ notif, onMarkAsRead, onDelete }: ModernNotificationItemProps) {
+  const getIcon = () => {
+    switch (notif.type) {
+      case 'vente': return <ShoppingCart className="h-4 w-4" />;
+      case 'stock': return <Box className="h-4 w-4" />;
+      case 'engagement': return <Activity className="h-4 w-4" />;
+      case 'ia': return <Bot className="h-4 w-4" />;
+      default: return <Bell className="h-4 w-4" />;
+    }
+  };
+
+  const getColorClasses = (): ColorClasses => {
+    switch (notif.color) {
+      case 'green': return {
+        border: 'border-l-emerald-400',
+        bg: 'bg-gradient-to-r from-emerald-50 to-green-50',
+        icon: 'bg-emerald-100 text-emerald-600',
+        title: 'text-emerald-900',
+        text: 'text-emerald-700',
+        badge: 'bg-emerald-100 text-emerald-700'
+      };
+      case 'orange': return {
+        border: 'border-l-amber-400',
+        bg: 'bg-gradient-to-r from-amber-50 to-orange-50',
+        icon: 'bg-amber-100 text-amber-600',
+        title: 'text-amber-900',
+        text: 'text-amber-700',
+        badge: 'bg-amber-100 text-amber-700'
+      };
+      case 'blue': return {
+        border: 'border-l-blue-400',
+        bg: 'bg-gradient-to-r from-blue-50 to-indigo-50',
+        icon: 'bg-blue-100 text-blue-600',
+        title: 'text-blue-900',
+        text: 'text-blue-700',
+        badge: 'bg-blue-100 text-blue-700'
+      };
+      case 'purple': return {
+        border: 'border-l-purple-400',
+        bg: 'bg-gradient-to-r from-purple-50 to-pink-50',
+        icon: 'bg-purple-100 text-purple-600',
+        title: 'text-purple-900',
+        text: 'text-purple-700',
+        badge: 'bg-purple-100 text-purple-700'
+      };
+      default: return {
+        border: 'border-l-gray-400',
+        bg: 'bg-gradient-to-r from-gray-50 to-slate-50',
+        icon: 'bg-gray-100 text-gray-600',
+        title: 'text-gray-900',
+        text: 'text-gray-700',
+        badge: 'bg-gray-100 text-gray-700'
+      };
+    }
+  };
+
+  const colors = getColorClasses();
+
+  return (
+    <div 
+      className={`group relative p-4 ${colors.bg} ${colors.border} border-l-4 rounded-r-xl transition-all duration-300 hover:shadow-md hover:scale-[1.02] cursor-pointer`}
+      role="button"
+      tabIndex={0}
+      onKeyDown={(e) => {
+        if (e.key === 'Enter' || e.key === ' ') {
+          e.preventDefault();
+          notif.action?.onClick();
+        }
+      }}
+      aria-label={`Notification: ${notif.titre} - ${notif.message}`}
+    >
+      {!notif.lue && (
+        <div className="absolute top-2 right-2 w-2 h-2 bg-red-400 rounded-full animate-pulse" aria-hidden="true"></div>
+      )}
+      
+      <div className="flex items-start space-x-3">
+        <div className={`p-2.5 rounded-xl ${colors.icon} shadow-sm`} aria-hidden="true">
+          {getIcon()}
+        </div>
+        
+        <div className="flex-1 min-w-0">
+          <div className="flex items-center justify-between mb-2">
+            <h4 className={`font-semibold text-sm ${colors.title}`}>
+              {notif.titre}
+            </h4>
+            <span className={`px-2 py-1 text-xs font-medium rounded-full ${colors.badge}`}>
+              {notif.statut}
+            </span>
+          </div>
+          
+          <p className={`text-sm leading-relaxed ${colors.text} mb-3`}>
+            {notif.message}
+          </p>
+          
+          <div className="flex items-center justify-between">
+            <div className="flex items-center space-x-3">
+              <span className="text-xs text-gray-500">
+                {notif.date.toLocaleString('fr-FR', {
+                  day: '2-digit',
+                  month: '2-digit',
+                  hour: '2-digit',
+                  minute: '2-digit'
+                })}
+              </span>
+              {notif.montant && (
+                <span className="text-xs font-bold text-green-600 bg-green-100 px-2 py-1 rounded-full">
+                  {notif.montant}
+                </span>
+              )}
+            </div>
+            
+            <div className="flex items-center space-x-1 opacity-0 group-hover:opacity-100 transition-opacity duration-200">
+              {notif.action && (
+                <Button 
+                  size="sm" 
+                  variant="ghost"
+                  className="text-xs h-7 px-3 hover:bg-white/80"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    notif.action?.onClick();
+                  }}
+                  aria-label={notif.action.label}
+                >
+                  {notif.action.label}
+                </Button>
+              )}
+              <Button
+                size="sm"
+                variant="ghost"
+                className="h-7 w-7 p-0 hover:bg-red-100 hover:text-red-600"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  onDelete(notif.id);
+                }}
+                aria-label="Supprimer la notification"
+              >
+                <Trash2 className="h-3 w-3" />
+              </Button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+export function Header({ 
+  showNotifications = true,
+  showMessages = true,
+  showQuickActions = true 
+}: HeaderProps = {}) {
+  // États du composant
   const [search, setSearch] = useState("");
-  const inputRef = useRef<HTMLInputElement>(null);
-  const [notifCount, setNotifCount] = useState(3);
   const [msgCount, setMsgCount] = useState(2);
   const [online, setOnline] = useState(true);
   const [modalOpen, setModalOpen] = useState(false);
   const [aiAssistantOpen, setAiAssistantOpen] = useState(false);
+  const [isMounted, setIsMounted] = useState(false);
+  const [filtreNotif, setFiltreNotif] = useState<'toutes' | 'ventes' | 'ia' | 'stock'>('toutes');
+  const [searchFocused, setSearchFocused] = useState(false);
+  
+  // Refs
+  const inputRef = useRef<HTMLInputElement>(null);
+  
+  // Hooks
   const router = useRouter();
   const { addArticle, stats } = useData();
   const { signOut, user } = useAuth();
-  const [isMounted, setIsMounted] = useState(false);
-  useEffect(() => { setIsMounted(true); }, []);
+  const { importVintedData } = useVintedImport();
+  
+  // État des notifications avec types stricts
+  const [notifications, setNotifications] = useState<Notification[]>([
+    {
+      id: 1,
+      type: "vente",
+      titre: "💰 Nouvelle vente",
+      message: "Jean Levi's vendu pour 35€ à Thomas M.",
+      lue: false,
+      date: new Date(Date.now() - 15 * 60 * 1000),
+      statut: "Succès",
+      montant: "+28€ net",
+      action: { label: "Voir détails", onClick: () => router.push("/ventes") },
+      color: "green",
+    },
+    {
+      id: 2,
+      type: "stock",
+      titre: "📦 Stock faible",
+      message: "Plus que 2 articles en stock dans la catégorie Chaussures",
+      lue: false,
+      date: new Date(Date.now() - 60 * 60 * 1000),
+      statut: "Attention",
+      action: { label: "Réapprovisionner", onClick: () => router.push("/stock") },
+      color: "orange",
+    },
+    {
+      id: 3,
+      type: "engagement",
+      titre: "❤️ Nouvel engagement",
+      message: "Votre sac Longchamp a reçu 5 nouveaux favoris",
+      lue: true,
+      date: new Date(Date.now() - 2 * 60 * 60 * 1000),
+      statut: "Info",
+      action: { label: "Voir l'article", onClick: () => router.push("/inventaire") },
+      color: "blue",
+    },
+    {
+      id: 4,
+      type: "ia",
+      titre: "🤖 Analyse IA terminée",
+      message: "L'analyse de vos photos a détecté 3 améliorations possibles",
+      lue: false,
+      date: new Date(Date.now() - 30 * 60 * 1000),
+      statut: "IA",
+      action: { label: "Voir l'analyse", onClick: () => router.push("/ai-analytics") },
+      color: "purple",
+    },
+  ]);
+
+  // Effects
+  useEffect(() => { 
+    setIsMounted(true); 
+  }, []);
+
+  // Fonctions calculées avec useCallback pour optimiser les performances
+  const notifCount = notifications.filter((n: Notification) => !n.lue).length;
+  
+  const filteredNotifications = useCallback(() => {
+    return notifications.filter((n: Notification) => {
+      if (filtreNotif === 'toutes') return true;
+      if (filtreNotif === 'ventes') return n.type === 'vente';
+      if (filtreNotif === 'ia') return n.type === 'ia';
+      if (filtreNotif === 'stock') return n.type === 'stock';
+      return true;
+    });
+  }, [notifications, filtreNotif]);
+
+  // Fonctions de gestion
+  const markAllAsRead = useCallback(() => {
+    setNotifications(notifs => notifs.map((n: Notification) =>
+      (filtreNotif === 'toutes' ||
+       (filtreNotif === 'ventes' && n.type === 'vente') ||
+       (filtreNotif === 'ia' && n.type === 'ia') ||
+       (filtreNotif === 'stock' && n.type === 'stock'))
+        ? { ...n, lue: true } : n
+    ));
+  }, [filtreNotif]);
+  
+  const deleteNotif = useCallback((id: number) => {
+    setNotifications(notifs => notifs.filter((n: Notification) => n.id !== id));
+  }, []);
+  
+  const markAsRead = useCallback((id: number) => {
+    setNotifications(notifs => notifs.map((n: Notification) => n.id === id ? { ...n, lue: true } : n));
+  }, []);
+
+  const handleLogout = useCallback(() => {
+    signOut();
+    router.push('/login');
+  }, [signOut, router]);
+
+  const getInitials = useCallback(() => {
+    if (!user?.name) return 'U';
+    return user.name.split(' ').map((n: string) => n[0]).join('').toUpperCase();
+  }, [user?.name]);
+
+  const handleAddArticle = useCallback((articleData: any) => {
+    addArticle(articleData);
+    setModalOpen(false);
+  }, [addArticle]);
+
+  // Vérification de montage
   if (!isMounted) return null;
 
-  // Utiliser la vraie fonction d'ajout d'article du contexte
-  const handleAddArticle = (article: any) => {
-    addArticle(article);
-    console.log("Article ajouté avec succès:", article);
-  };
-
-  // Handler pour la déconnexion
-  const handleLogout = async () => {
-    await signOut();
-    router.replace('/login');
-  };
-
-  // Fonction utilitaire pour extraire les initiales de l'utilisateur
-  function getInitials() {
-    if (user?.user_metadata?.full_name) {
-      return user.user_metadata.full_name.split(' ').map((n: string) => n[0]).join('').toUpperCase().slice(0,2);
-    }
-    if (user?.email) {
-      const [name] = user.email.split('@');
-      return name.split(/[.\-_]/).map((n: string) => n[0]).join('').toUpperCase().slice(0,2);
-    }
-    return 'U';
-  }
-
   return (
-    <header className="bg-white shadow-sm border-b h-16 flex items-center justify-between px-2 sm:px-6">
-      <div className="flex items-center space-x-2 sm:space-x-4 flex-1">
-        <div className="relative max-w-md w-full group">
-          <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-purple-400 h-5 w-5 group-focus-within:text-purple-600 transition-colors" />
-          <Input
-            ref={inputRef}
-            value={search}
-            onChange={e => setSearch(e.target.value)}
-            placeholder="Rechercher un article, acheteur..."
-            className="pl-10 pr-10 focus:ring-2 focus:ring-purple-400 focus:border-purple-400 transition-all"
-            aria-label="Recherche"
-          />
-          {search && (
-            <button
-              className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-red-500 focus:outline-none"
-              onClick={() => { setSearch(""); inputRef.current?.focus(); }}
-              aria-label="Effacer la recherche"
-            >
-              <svg width="18" height="18" fill="none" viewBox="0 0 24 24"><path stroke="currentColor" strokeWidth="2" d="M6 6l12 12M6 18L18 6"/></svg>
-            </button>
-          )}
+    <header className="bg-white/80 backdrop-blur-xl shadow-lg border-b border-gray-200/50 h-20 flex items-center justify-between px-6 lg:px-8 sticky top-0 z-50">
+      {/* Section gauche */}
+      <div className="flex items-center gap-6 flex-1 max-w-2xl">
+        {/* Barre de recherche moderne */}
+        <div className={`relative flex-1 max-w-lg group transition-all duration-300 ${searchFocused ? 'scale-105' : ''}`}>
+          <div className="absolute inset-0 bg-gradient-to-r from-purple-400 to-pink-400 rounded-xl blur opacity-20 group-hover:opacity-30 transition-opacity duration-300"></div>
+          <div className="relative">
+            <Search className={`absolute left-4 top-1/2 transform -translate-y-1/2 h-4 w-4 transition-all duration-300 ${searchFocused ? 'text-purple-600 scale-110' : 'text-gray-400'}`} />
+            <input
+              type="text"
+              placeholder="Rechercher un article, acheteur..."
+              className="w-full pl-12 pr-4 py-3 rounded-xl bg-white/90 backdrop-blur-sm border border-gray-200 shadow-lg focus:outline-none focus:ring-2 focus:ring-purple-400 focus:border-transparent text-gray-700 placeholder-gray-400 text-sm transition-all duration-300 hover:shadow-xl"
+              aria-label="Recherche dans l'application"
+              value={search}
+              onChange={e => setSearch(e.target.value)}
+              onFocus={() => setSearchFocused(true)}
+              onBlur={() => setSearchFocused(false)}
+              ref={inputRef}
+            />
+          </div>
+        </div>
+        
+        {/* Indicateur de statut moderne */}
+        <div className="hidden lg:flex items-center">
+          <div className="flex items-center gap-3 px-4 py-2 rounded-xl bg-gradient-to-r from-emerald-50 to-green-50 border border-emerald-200 shadow-sm">
+            <div className="flex items-center gap-2">
+              <div className="w-2.5 h-2.5 rounded-full bg-emerald-400 animate-pulse shadow-lg"></div>
+              <span className="text-sm font-semibold text-emerald-700">En ligne</span>
+            </div>
+            <div className="h-4 w-px bg-emerald-200"></div>
+            <div className="flex items-center gap-2">
+              <Zap className="w-4 h-4 text-purple-600" />
+              <span className="text-sm font-bold text-purple-700">+{stats.totalVentes || 0} ventes aujourd'hui</span>
+            </div>
+          </div>
         </div>
       </div>
-      <div className="flex items-center space-x-2 sm:space-x-6">
-        {/* Statut en ligne + ventes */}
-        <div className="flex items-center space-x-2 px-2 py-1 bg-gradient-to-r from-purple-100 to-pink-100 rounded-lg border shadow-sm cursor-pointer group hover:shadow-md hover:scale-105 transition-all duration-200" tabIndex={0} title="Statut et ventes du jour">
-          <div className="flex items-center space-x-1">
-            <div
-              className="w-2.5 h-2.5 rounded-full border-2 border-white"
-              style={{
-                background: online ? "#a21caf" : "#f87171",
-                boxShadow: online
-                  ? "0 0 0 8px rgba(168,85,247,0.18)" // violet glow
-                  : "0 0 0 8px rgba(248,113,113,0.18)" // rouge glow
-              }}
-            ></div>
-            <span className="text-xs font-medium text-purple-700 group-hover:text-purple-800 transition-colors duration-200">{online ? "En ligne" : "Hors ligne"}</span>
+      
+      {/* Section droite */}
+      <div className="flex items-center gap-3">
+        {/* Actions rapides avec effets modernes */}
+        {showQuickActions && (
+          <div className="flex items-center gap-2">
+            <Button
+              variant="ghost"
+              size="icon"
+              className="h-10 w-10 rounded-xl hover:bg-purple-50 hover:text-purple-600 transition-all duration-300 hover:scale-110 hover:shadow-lg"
+              onClick={() => setModalOpen(true)}
+              aria-label="Ajouter un article"
+            >
+              <Plus className="w-4 h-4" />
+            </Button>
+            
+            <Button
+              variant="ghost"
+              size="icon"
+              className="h-10 w-10 rounded-xl hover:bg-orange-50 hover:text-orange-600 transition-all duration-300 hover:scale-110 hover:shadow-lg"
+              asChild
+              aria-label="Importer des données Vinted"
+            >
+              <ImportVintedButton />
+            </Button>
+            
+            <Button
+              variant="ghost"
+              size="icon"
+              className="h-10 w-10 rounded-xl hover:bg-blue-50 hover:text-blue-600 transition-all duration-300 hover:scale-110 hover:shadow-lg"
+              onClick={() => router.push('/stock')}
+              aria-label="Gérer le stock"
+            >
+              <Box className="w-4 h-4" />
+            </Button>
+            
+            <Button
+              variant="ghost"
+              size="icon"
+              className="h-10 w-10 rounded-xl hover:bg-indigo-50 hover:text-indigo-600 transition-all duration-300 hover:scale-110 hover:shadow-lg"
+              onClick={() => setAiAssistantOpen(true)}
+              aria-label="Assistant IA"
+            >
+              <Bot className="w-4 h-4" />
+            </Button>
+            
+            <Button
+              variant="ghost"
+              size="icon"
+              className="h-10 w-10 rounded-xl hover:bg-green-50 hover:text-green-600 transition-all duration-300 hover:scale-110 hover:shadow-lg"
+              onClick={() => router.push('/analytics')}
+              aria-label="Voir les analytics"
+            >
+              <TrendingUp className="w-4 h-4" />
+            </Button>
           </div>
-          <span className="hidden sm:inline mx-1 text-gray-300">|</span>
-          <div className="text-xs text-gray-700 flex items-center gap-1">
-            <span className="font-bold text-green-600 animate-bounce-slow group-hover:scale-110 transition-transform duration-200">+{stats.totalVentes}</span>
-            <span className="hidden sm:inline group-hover:text-gray-800 transition-colors duration-200">ventes aujourd'hui</span>
-          </div>
-        </div>
-        {/* Actions rapides */}
-        <div className="flex items-center space-x-1 sm:space-x-2">
-          <Button variant="ghost" size="icon" className="relative group hover:bg-purple-50 hover:scale-110 transition-all duration-200" aria-label="Ajouter un article (Ctrl+N)" onClick={() => setModalOpen(true)}>
-            <Package className="h-5 w-5 group-hover:rotate-12 transition-transform duration-200" />
-            <span className="sr-only">Ajouter</span>
-            <div className="absolute left-1/2 -bottom-8 transform -translate-x-1/2 bg-gray-900 text-white text-xs px-2 py-1 rounded opacity-0 group-hover:opacity-100 transition-opacity duration-200 whitespace-nowrap pointer-events-none">
-              Ajouter un article (Ctrl+N)
-            </div>
-          </Button>
-          <Button variant="ghost" size="icon" className="relative group hover:bg-purple-50 hover:scale-110 transition-all duration-200" aria-label="Assistant AI (Ctrl+AI)" onClick={() => setAiAssistantOpen(true)}>
-            <Bot className="h-5 w-5 group-hover:rotate-12 transition-transform duration-200" />
-            <span className="sr-only">Assistant AI</span>
-            <div className="absolute left-1/2 -bottom-8 transform -translate-x-1/2 bg-gray-900 text-white text-xs px-2 py-1 rounded opacity-0 group-hover:opacity-100 transition-opacity duration-200 whitespace-nowrap pointer-events-none">
-              Assistant AI (Ctrl+AI)
-            </div>
-          </Button>
-          <Button variant="ghost" size="icon" className="relative group hover:bg-purple-50 hover:scale-110 transition-all duration-200" aria-label="Voir les analytics (Ctrl+A)">
-            <TrendingUp className="h-5 w-5 group-hover:rotate-12 transition-transform duration-200" />
-            <span className="sr-only">Analytics</span>
-            <div className="absolute left-1/2 -bottom-8 transform -translate-x-1/2 bg-gray-900 text-white text-xs px-2 py-1 rounded opacity-0 group-hover:opacity-100 transition-opacity duration-200 whitespace-nowrap pointer-events-none">
-              Voir les analytics (Ctrl+A)
-            </div>
-          </Button>
-        </div>
-        {/* Notifications */}
-        <DropdownMenu>
-          <DropdownMenuTrigger asChild>
-            <Button variant="ghost" size="icon" className="relative group hover:bg-purple-50 hover:scale-110 transition-all duration-200" aria-label="Notifications">
-              <div className="relative">
-                <Bell className="h-5 w-5 transition-all duration-200 group-hover:scale-110 group-hover:rotate-12" />
+        )}
+        
+        <div className="h-6 w-px bg-gray-200"></div>
+        
+        {/* Notifications modernes */}
+        {showNotifications && (
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button
+                variant="ghost"
+                size="icon"
+                className="relative h-10 w-10 rounded-xl hover:bg-red-50 hover:text-red-600 transition-all duration-300 hover:scale-110"
+                aria-label={`Notifications (${notifCount} non lues)`}
+              >
+                <Bell className="w-4 h-4" />
                 {notifCount > 0 && (
-                  <div className="absolute -top-1 -right-1 h-5 w-5 flex items-center justify-center">
-                    <div className="absolute inset-0 bg-red-500 rounded-full animate-ping opacity-75"></div>
-                    <div className="relative bg-red-500 text-white text-xs font-bold rounded-full h-5 w-5 flex items-center justify-center group-hover:scale-110 transition-transform duration-200">
-                      {notifCount}
-                    </div>
+                  <div className="absolute -top-1 -right-1 h-5 w-5 bg-gradient-to-r from-red-400 to-pink-400 text-white text-xs font-bold rounded-full flex items-center justify-center shadow-lg animate-pulse">
+                    {notifCount}
+                  </div>
+                )}
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end" className="w-[420px] p-0 bg-white/95 backdrop-blur-xl border-0 shadow-2xl rounded-2xl">
+              <div className="p-6 border-b border-gray-100">
+                <div className="flex items-center justify-between mb-4">
+                  <h3 className="text-lg font-bold text-gray-900">Notifications</h3>
+                  <div className="flex items-center gap-2">
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      className="text-xs h-7 hover:bg-gray-100"
+                      onClick={markAllAsRead}
+                      aria-label="Marquer toutes les notifications comme lues"
+                    >
+                      Tout marquer comme lu
+                    </Button>
+                    <Button variant="ghost" size="icon" className="h-7 w-7" aria-label="Filtrer les notifications">
+                      <Filter className="h-3 w-3" />
+                    </Button>
+                  </div>
+                </div>
+                
+                {/* Filtres */}
+                <div className="flex gap-2">
+                  {(['toutes', 'ventes', 'stock', 'ia'] as const).map((filter) => (
+                    <Button
+                      key={filter}
+                      variant={filtreNotif === filter ? "default" : "ghost"}
+                      size="sm"
+                      className={`text-xs h-7 transition-all duration-200 ${
+                        filtreNotif === filter 
+                          ? 'bg-gradient-to-r from-purple-400 to-pink-400 text-white shadow-lg' 
+                          : 'hover:bg-gray-100'
+                      }`}
+                      onClick={() => setFiltreNotif(filter)}
+                      aria-label={`Filtrer par ${filter}`}
+                    >
+                      {filter.charAt(0).toUpperCase() + filter.slice(1)}
+                    </Button>
+                  ))}
+                </div>
+              </div>
+              
+              <div className="max-h-96 overflow-y-auto p-2">
+                {filteredNotifications().length === 0 ? (
+                  <div className="p-8 text-center">
+                    <Bell className="h-12 w-12 text-gray-300 mx-auto mb-3" />
+                    <p className="text-gray-500">Aucune notification</p>
+                  </div>
+                ) : (
+                  <div className="space-y-2">
+                    {filteredNotifications().map(notif => (
+                      <ModernNotificationItem 
+                        key={notif.id} 
+                        notif={notif} 
+                        onMarkAsRead={markAsRead}
+                        onDelete={deleteNotif}
+                      />
+                    ))}
                   </div>
                 )}
               </div>
-            </Button>
-          </DropdownMenuTrigger>
-          <DropdownMenuContent align="end" className="w-96 max-h-96 overflow-y-auto">
-            {/* Header des notifications */}
-            <div className="flex items-center justify-between p-4 border-b">
-              <div>
-                <DropdownMenuLabel className="text-base font-semibold">Notifications</DropdownMenuLabel>
-                <p className="text-xs text-gray-500">3 nouvelles notifications</p>
-              </div>
-              <div className="flex items-center space-x-2">
-                <Button variant="ghost" size="sm" className="text-xs">
-                  Tout marquer lu
-                </Button>
-                <Button variant="ghost" size="sm" className="text-xs">
-                  Paramètres
-                </Button>
-              </div>
-            </div>
-
-            {/* Filtres de notifications */}
-            <div className="flex items-center space-x-2 p-3 border-b bg-gray-50">
-              <Button variant="outline" size="sm" className="text-xs bg-transparent">
-                Toutes
-              </Button>
-              <Button variant="ghost" size="sm" className="text-xs">
-                Ventes
-              </Button>
-              <Button variant="ghost" size="sm" className="text-xs">
-                IA
-              </Button>
-              <Button variant="ghost" size="sm" className="text-xs">
-                Stock
-              </Button>
-            </div>
-
-            <DropdownMenuSeparator />
-
-            {/* Notifications avec types et priorités */}
-            <div className="max-h-64 overflow-y-auto">
-              {/* Notification IA urgente */}
-              <DropdownMenuItem className="p-4 border-l-4 border-l-red-500 bg-red-50 hover:bg-red-100">
-                <div className="flex items-start space-x-3 w-full">
-                  <div className="p-2 bg-red-100 rounded-lg">
-                    <Brain className="h-4 w-4 text-red-600" />
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <div className="flex items-center justify-between mb-1">
-                      <p className="text-sm font-semibold text-red-800">🤖 Alerte IA Critique</p>
-                      <div className="flex items-center space-x-1">
-                        <div className="w-2 h-2 bg-red-500 rounded-full"></div>
-                        <span className="text-xs text-red-600">Urgent</span>
-                      </div>
-                    </div>
-                    <p className="text-xs text-red-700 mb-2">
-                      Votre robe Zara pourrait se vendre 25% plus cher selon les tendances actuelles
-                    </p>
-                    <div className="flex items-center justify-between">
-                      <span className="text-xs text-red-600">Il y a 5 min</span>
-                      <Button size="sm" variant="outline" className="text-xs h-6 bg-transparent">
-                        Ajuster le prix
-                      </Button>
-                    </div>
-                  </div>
-                </div>
-              </DropdownMenuItem>
-
-              {/* Notification de vente */}
-              <DropdownMenuItem className="p-4 border-l-4 border-l-green-500 bg-green-50 hover:bg-green-100">
-                <div className="flex items-start space-x-3 w-full">
-                  <div className="p-2 bg-green-100 rounded-lg">
-                    <ShoppingCart className="h-4 w-4 text-green-600" />
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <div className="flex items-center justify-between mb-1">
-                      <p className="text-sm font-semibold text-green-800">💰 Nouvelle vente</p>
-                      <span className="text-xs text-green-600">Succès</span>
-                    </div>
-                    <p className="text-xs text-green-700 mb-2">Jean Levi's vendu pour 35€ à Thomas M.</p>
-                    <div className="flex items-center justify-between">
-                      <span className="text-xs text-green-600">Il y a 15 min</span>
-                      <div className="flex items-center space-x-2">
-                        <span className="text-xs font-semibold text-green-800">+28€ net</span>
-                        <Button size="sm" variant="outline" className="text-xs h-6 bg-transparent">
-                          Voir détails
-                        </Button>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              </DropdownMenuItem>
-
-              {/* Notification de stock */}
-              <DropdownMenuItem className="p-4 border-l-4 border-l-orange-500 bg-orange-50 hover:bg-orange-100">
-                <div className="flex items-start space-x-3 w-full">
-                  <div className="p-2 bg-orange-100 rounded-lg">
-                    <Package className="h-4 w-4 text-orange-600" />
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <div className="flex items-center justify-between mb-1">
-                      <p className="text-sm font-semibold text-orange-800">📦 Stock faible</p>
-                      <span className="text-xs text-orange-600">Attention</span>
-                    </div>
-                    <p className="text-xs text-orange-700 mb-2">
-                      Plus que 2 articles en stock dans la catégorie Chaussures
-                    </p>
-                    <div className="flex items-center justify-between">
-                      <span className="text-xs text-orange-600">Il y a 1h</span>
-                      <Button size="sm" variant="outline" className="text-xs h-6 bg-transparent">
-                        Réapprovisionner
-                      </Button>
-                    </div>
-                  </div>
-                </div>
-              </DropdownMenuItem>
-
-              {/* Notification d'engagement */}
-              <DropdownMenuItem className="p-4 border-l-4 border-l-blue-500 bg-blue-50 hover:bg-blue-100">
-                <div className="flex items-start space-x-3 w-full">
-                  <div className="p-2 bg-blue-100 rounded-lg">
-                    <Heart className="h-4 w-4 text-blue-600" />
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <div className="flex items-center justify-between mb-1">
-                      <p className="text-sm font-semibold text-blue-800">❤️ Nouvel engagement</p>
-                      <span className="text-xs text-blue-600">Info</span>
-                    </div>
-                    <p className="text-xs text-blue-700 mb-2">Votre sac Longchamp a reçu 5 nouveaux favoris</p>
-                    <div className="flex items-center justify-between">
-                      <span className="text-xs text-blue-600">Il y a 2h</span>
-                      <Button size="sm" variant="outline" className="text-xs h-6 bg-transparent">
-                        Voir l'article
-                      </Button>
-                    </div>
-                  </div>
-                </div>
-              </DropdownMenuItem>
-            </div>
-
-            {/* Footer des notifications */}
-            <div className="p-3 border-t bg-gray-50">
-              <Button variant="ghost" className="w-full text-sm">
-                Voir toutes les notifications
-              </Button>
-            </div>
-          </DropdownMenuContent>
-        </DropdownMenu>
+            </DropdownMenuContent>
+          </DropdownMenu>
+        )}
+        
         {/* Messages */}
+        {showMessages && (
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button
+                variant="ghost"
+                size="icon"
+                className="relative h-10 w-10 rounded-xl hover:bg-blue-50 hover:text-blue-600 transition-all duration-300 hover:scale-110"
+                aria-label={`Messages (${msgCount} non lus)`}
+              >
+                <MessageCircle className="w-4 h-4" />
+                {msgCount > 0 && (
+                  <div className="absolute -top-1 -right-1 h-5 w-5 bg-gradient-to-r from-blue-400 to-indigo-400 text-white text-xs font-bold rounded-full flex items-center justify-center shadow-lg">
+                    {msgCount}
+                  </div>
+                )}
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end" className="w-80 bg-white/95 backdrop-blur-xl border-0 shadow-2xl rounded-2xl">
+              <div className="p-4">
+                <h3 className="font-bold text-gray-900 mb-4">Messages</h3>
+                <div className="text-center py-8">
+                  <MessageCircle className="h-12 w-12 text-gray-300 mx-auto mb-3" />
+                  <p className="text-gray-500">Aucun message</p>
+                </div>
+              </div>
+            </DropdownMenuContent>
+          </DropdownMenu>
+        )}
+        
+        {/* Paramètres */}
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
-            <Button variant="ghost" size="icon" className="relative group" aria-label="Messages">
-              <MessageCircle className="h-5 w-5 transition-all duration-200 group-hover:scale-110" />
-              {msgCount > 0 && (
-                <div className="absolute -top-1 -right-1 h-4 w-4 bg-blue-500 text-white text-xs font-bold rounded-full flex items-center justify-center animate-pulse">
-                  {msgCount}
-                </div>
-              )}
+            <Button
+              variant="ghost"
+              size="icon"
+              className="h-10 w-10 rounded-xl hover:bg-gray-50 hover:text-gray-600 transition-all duration-300 hover:scale-110"
+              aria-label="Paramètres"
+            >
+              <Settings className="w-4 h-4" />
             </Button>
           </DropdownMenuTrigger>
-          <DropdownMenuContent align="end" className="w-80">
-            <DropdownMenuLabel>Messages</DropdownMenuLabel>
+          <DropdownMenuContent align="end" className="bg-white/95 backdrop-blur-xl border-0 shadow-2xl rounded-2xl">
+            <DropdownMenuLabel className="text-gray-900">Paramètres</DropdownMenuLabel>
             <DropdownMenuSeparator />
-            <DropdownMenuItem className="p-3">
-              <div className="flex items-start space-x-3">
-                <Avatar className="h-8 w-8">
-                  <AvatarImage src="/placeholder.svg?height=32&width=32" />
-                  <AvatarFallback>ML</AvatarFallback>
-                </Avatar>
-                <div className="flex-1">
-                  <p className="text-sm font-medium">Marie L.</p>
-                  <p className="text-xs text-gray-500">Question sur la robe Zara...</p>
-                  <span className="text-xs text-gray-400">Il y a 10 min</span>
-                </div>
-                <div className="w-2 h-2 bg-blue-500 rounded-full"></div>
-              </div>
+            <DropdownMenuItem 
+              onClick={() => router.push('/parametres')}
+              className="hover:bg-gray-50"
+            >
+              Préférences
+            </DropdownMenuItem>
+            <DropdownMenuItem 
+              onClick={handleLogout}
+              className="hover:bg-red-50 text-red-600"
+            >
+              Déconnexion
             </DropdownMenuItem>
           </DropdownMenuContent>
         </DropdownMenu>
-        {/* Paramètres */}
-        <Button variant="ghost" size="icon" className="group" aria-label="Paramètres" onClick={() => router.push("/parametres")}>
-          <Settings className="h-5 w-5" />
-        </Button>
-        {/* Profil utilisateur */}
+        
+        {/* Avatar utilisateur moderne */}
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
-            <button className="relative focus:outline-none group" aria-label="Profil utilisateur">
-              <Avatar className="h-8 w-8">
-                <AvatarImage src="/placeholder.svg?height=40&width=40" alt="Avatar utilisateur" />
-                <AvatarFallback>{getInitials()}</AvatarFallback>
-              </Avatar>
-              <span className="absolute bottom-0 right-0 w-3 h-3 bg-green-400 border-2 border-white rounded-full"></span>
-            </button>
+            <div className="cursor-pointer group">
+              <div className="relative">
+                <div className="absolute inset-0 bg-gradient-to-r from-purple-400 to-pink-400 rounded-xl blur opacity-50 group-hover:opacity-75 transition-opacity duration-300"></div>
+                <div className="relative w-10 h-10 rounded-xl bg-gradient-to-br from-purple-500 to-pink-500 flex items-center justify-center shadow-lg ring-2 ring-white transition-all duration-300 group-hover:scale-105">
+                  <span className="text-white font-bold text-sm">{getInitials()}</span>
+                  <div className="absolute -bottom-1 -right-1 w-3 h-3 bg-green-400 rounded-full border-2 border-white shadow-sm"></div>
+                </div>
+              </div>
+            </div>
           </DropdownMenuTrigger>
-          <DropdownMenuContent align="end" className="w-64">
-            {/* Profil utilisateur */}
-            <div className="p-4 border-b">
-              <div className="flex items-center space-x-3">
-                <Avatar className="h-12 w-12">
-                  <AvatarImage src="/placeholder.svg?height=48&width=48" />
-                  <AvatarFallback className="bg-gradient-to-r from-purple-500 to-pink-500 text-white font-semibold text-lg">
-                    {getInitials()}
-                  </AvatarFallback>
-                </Avatar>
-                <div className="flex-1">
-                  <p className="font-semibold">{user?.email || user?.user_metadata?.email || 'Utilisateur'}</p>
-                  <div className="flex items-center space-x-1 mt-1">
-                    <Crown className="h-3 w-3 text-yellow-500" />
-                    <span className="text-xs text-yellow-600 font-medium">Plan Gratuit</span>
-                  </div>
+          <DropdownMenuContent align="end" className="bg-white/95 backdrop-blur-xl border-0 shadow-2xl rounded-2xl">
+            <DropdownMenuLabel className="text-gray-900">
+              <div className="flex items-center gap-3 py-2">
+                <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-purple-500 to-pink-500 flex items-center justify-center">
+                  <span className="text-white font-bold text-sm">{getInitials()}</span>
+                </div>
+                <div>
+                  <p className="font-semibold text-sm">{user?.name || 'Utilisateur'}</p>
+                  <p className="text-xs text-gray-500">{user?.email}</p>
                 </div>
               </div>
-            </div>
-
-            {/* Stats rapides */}
-            <div className="p-3 border-b bg-gray-50">
-              <div className="grid grid-cols-3 gap-3 text-center">
-                <div>
-                  <p className="text-lg font-bold text-green-600">{stats.totalVentes}</p>
-                  <p className="text-xs text-gray-500">Ventes</p>
-                </div>
-                <div>
-                  <p className="text-lg font-bold text-blue-600">{stats.totalRevenus.toLocaleString()}€</p>
-                  <p className="text-xs text-gray-500">Revenus</p>
-                </div>
-                <div>
-                  <p className="text-lg font-bold text-purple-600">{stats.totalArticles}</p>
-                  <p className="text-xs text-gray-500">Articles</p>
-                </div>
-              </div>
-            </div>
-
+            </DropdownMenuLabel>
             <DropdownMenuSeparator />
-            <DropdownMenuItem onClick={() => router.push('/profil')}>
-              <User className="mr-2 h-4 w-4" />
+            <DropdownMenuItem 
+              onClick={() => router.push('/profil')}
+              className="hover:bg-purple-50"
+            >
               Mon profil
             </DropdownMenuItem>
-            <DropdownMenuItem>
-              <Settings className="mr-2 h-4 w-4" />
-              Paramètres
-            </DropdownMenuItem>
-            <DropdownMenuItem>
-              <Crown className="mr-2 h-4 w-4" />
-              Passer à Premium
-            </DropdownMenuItem>
-            <DropdownMenuSeparator />
-            <DropdownMenuItem className="text-red-600" onClick={handleLogout}>
-              <LogOut className="mr-2 h-4 w-4" />
+            <DropdownMenuItem 
+              onClick={handleLogout}
+              className="hover:bg-red-50 text-red-600"
+            >
               Déconnexion
             </DropdownMenuItem>
           </DropdownMenuContent>
         </DropdownMenu>
       </div>
-      {/* Modal d'ajout d'article */}
-      <ArticleFormModal open={modalOpen} onClose={() => setModalOpen(false)} onSubmit={handleAddArticle} />
-              {/* Assistant AI */}
-        <AIAssistant isOpen={aiAssistantOpen} onClose={() => setAiAssistantOpen(false)} />
+      
+      {/* Modals */}
+      <ArticleFormModal 
+        open={modalOpen} 
+        onClose={() => setModalOpen(false)} 
+        onSubmit={handleAddArticle} 
+      />
+      <AIAssistant 
+        isOpen={aiAssistantOpen} 
+        onClose={() => setAiAssistantOpen(false)} 
+      />
     </header>
   );
-} 
+}

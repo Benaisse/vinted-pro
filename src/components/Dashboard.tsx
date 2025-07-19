@@ -10,6 +10,7 @@ import { useData } from "@/contexts/DataContext";
 import { ventes as ventesData } from "@/data/ventes";
 import { ArticleFormModal, Article } from "@/components/ArticleFormModal";
 import { motion, AnimatePresence } from "framer-motion";
+import { ImportVintedSmartButton } from "@/components/ImportVintedCSVButton";
 
 // Types pour les périodes
 type PeriodType = '7j' | '30j' | '3m' | '1a' | 'custom';
@@ -233,6 +234,7 @@ export function Dashboard() {
               <p className="text-slate-600 mt-2 text-lg">Vue d'ensemble de vos performances Vinted</p>
             </div>
             <div className="flex items-center gap-3">
+              <ImportVintedSmartButton onImport={(articles) => {/* TODO: ajouter à l'inventaire */}} />
               <Button 
                 variant="outline" 
                 className="flex items-center gap-2 bg-white/80 backdrop-blur-sm border-slate-200 hover:bg-white transition-all duration-200 hover:scale-105 hover:shadow-lg hover:border-indigo-300"

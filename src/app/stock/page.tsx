@@ -1,12 +1,13 @@
 "use client";
 
-import React, { useState, useMemo } from "react";
+import React, { useState, useMemo, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { stock as stockData } from "@/data/stock";
 import { Plus, Search, Filter, Package, AlertTriangle, TrendingUp, DollarSign, AlertCircle, Edit, Plus as PlusIcon, Minus as MinusIcon, RefreshCw, ChevronDown, X, Check, Clock, Truck, Users, BarChart3, Sparkles } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useData } from "@/contexts/DataContext";
+import { Toast } from "@/components/ui/Toast";
 
 interface StockItem {
   id: number;
@@ -148,16 +149,7 @@ export default function StockPage() {
 
         {/* Message de succès */}
         <AnimatePresence>
-          {messageSucces && (
-            <motion.div
-              initial={{ opacity: 0, y: -20 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: -20 }}
-              transition={{ duration: 0.3 }}
-            >
-              <Toast message={messageSucces} type="success" />
-            </motion.div>
-          )}
+          {messageSucces && <Toast message={messageSucces} type="success" />}
         </AnimatePresence>
 
         {/* Alertes */}
@@ -490,7 +482,7 @@ export default function StockPage() {
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
-              className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4"
+              className="fixed inset-0 z-[100] flex items-center justify-center bg-black/50 backdrop-blur-sm"
               onClick={() => setModalOuvert(false)}
             >
               <motion.div
@@ -498,7 +490,7 @@ export default function StockPage() {
                 animate={{ scale: 1, opacity: 1 }}
                 exit={{ scale: 0.9, opacity: 0 }}
                 transition={{ duration: 0.3, ease: "easeOut" }}
-                className="bg-white rounded-2xl p-6 w-full max-w-md shadow-2xl"
+                className="bg-white rounded-xl max-w-2xl w-full max-h-[90vh] overflow-y-auto"
                 onClick={(e) => e.stopPropagation()}
               >
                 {/* ...existing modal content... */}
@@ -595,30 +587,5 @@ function StockStatusBadge({ statut }: { statut: string }) {
       {config.icon}
       {statut}
     </span>
-  );
-}
-
-function Toast({ message, type }: { message: string, type: 'success' | 'error' }) {
-  return (
-    <motion.div
-      initial={{ opacity: 0, y: -20 }}
-      animate={{ opacity: 1, y: 0 }}
-      exit={{ opacity: 0, y: -20 }}
-      transition={{ duration: 0.3 }}
-      className={`fixed top-4 right-4 z-50 p-4 rounded-lg shadow-lg backdrop-blur-sm border ${
-        type === 'success' 
-          ? 'bg-green-50 border-green-200 text-green-800' 
-          : 'bg-red-50 border-red-200 text-red-800'
-      }`}
-    >
-      <div className="flex items-center gap-2">
-        {type === 'success' ? (
-          <Check className="w-4 h-4" />
-        ) : (
-          <AlertCircle className="w-4 h-4" />
-        )}
-        <span className="font-medium">{message}</span>
-      </div>
-    </motion.div>
   );
 } 
