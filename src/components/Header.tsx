@@ -36,8 +36,6 @@ import { useRouter } from "next/navigation";
 import { useData } from "@/contexts/DataContext";
 import { useAuth } from "@/contexts/AuthContext";
 import { ImportVintedButton } from "./import/ImportVintedButton";
-import { VintedCommand } from "@/types/vinted";
-import { useVintedImport } from "@/hooks/useVintedImport";
 import { 
   Notification, 
   NotificationFilter, 
@@ -220,7 +218,6 @@ export function Header({
   const router = useRouter();
   const { addArticle, stats } = useData();
   const { signOut, user } = useAuth();
-  const { importVintedData } = useVintedImport();
   
   // État des notifications avec types stricts
   const [notifications, setNotifications] = useState<Notification[]>([

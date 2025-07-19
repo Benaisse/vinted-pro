@@ -1,11 +1,3 @@
 {
-  "/page": "app/page.js",
-  "/ventes/page": "app/ventes/page.js",
-  "/inventaire/page": "app/inventaire/page.js",
-  "/stock/page": "app/stock/page.js",
-  "/analytics/page": "app/analytics/page.js",
-  "/ai-analytics/page": "app/ai-analytics/page.js",
-  "/ai-demo/page": "app/ai-demo/page.js",
-  "/abonnement/page": "app/abonnement/page.js",
-  "/parametres/page": "app/parametres/page.js"
+  "/page": "app/page.js"
 }
