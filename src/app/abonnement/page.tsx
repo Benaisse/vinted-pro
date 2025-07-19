@@ -18,17 +18,28 @@ export default function AbonnementPage() {
     async function fetchSubscription() {
       setLoading(true);
       try {
-        if (user) {
-          const { data: subData } = await supabase
+        if (user && supabase) {
+          const { data: subData, error: subError } = await supabase
             .from('user_subscriptions')
             .select('plan, status')
             .eq('user_id', user.id)
             .single();
-          if (subData) setSubscription(subData);
-          else setSubscription({ plan: 'free', status: 'active' });
+          
+          if (subError && subError.code !== 'PGRST116') {
+            console.error('Erreur Supabase:', subError);
+            setError("Erreur lors de la récupération de l'abonnement");
+          } else if (subData) {
+            setSubscription(subData);
+          } else {
+            setSubscription({ plan: 'free', status: 'active' });
+          }
+        } else {
+          setSubscription({ plan: 'free', status: 'active' });
         }
       } catch (e) {
+        console.error('Erreur fetchSubscription:', e);
         setError("Erreur lors de la récupération de l'abonnement");
+        setSubscription({ plan: 'free', status: 'active' });
       } finally {
         setLoading(false);
       }
@@ -37,21 +48,47 @@ export default function AbonnementPage() {
   }, [user]);
 
   const handleUpgradeToPremium = async () => {
-    if (!user) return;
+    if (!user || !supabase) {
+      setError("Erreur de connexion à la base de données");
+      return;
+    }
+    
     try {
-      const { error } = await supabase
+      const { error: upsertError } = await supabase
         .from('user_subscriptions')
         .upsert([
-          { user_id: user.id, plan: 'premium', status: 'active', start_date: new Date().toISOString() }
+          { 
+            user_id: user.id, 
+            plan: 'premium', 
+            status: 'active', 
+            start_date: new Date().toISOString() 
+          }
         ], { onConflict: 'user_id' });
-      if (error) throw error;
+      
+      if (upsertError) {
+        console.error('Erreur upsert:', upsertError);
+        throw new Error(upsertError.message);
+      }
+      
       setSubscription({ plan: 'premium', status: 'active' });
       setSuccess('Vous êtes maintenant Premium !');
       setTimeout(() => setSuccess(''), 2500);
     } catch (err: any) {
+      console.error('Erreur handleUpgradeToPremium:', err);
       setError(err.message || 'Erreur lors du passage à Premium');
     }
   };
+
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-100 p-6 flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-indigo-600 mx-auto mb-4"></div>
+          <p className="text-slate-600">Chargement de votre abonnement...</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <AnimatePresence mode="wait">
@@ -302,8 +339,27 @@ export default function AbonnementPage() {
             </div>
           </motion.div>
         </div>
-        {success && <div className="text-green-600 text-center my-2">{success}</div>}
-        {error && <div className="text-red-600 text-center my-2">{error}</div>}
+        
+        {/* Messages de succès et d'erreur */}
+        {success && (
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="fixed top-4 right-4 bg-green-500 text-white px-6 py-3 rounded-lg shadow-lg z-50"
+          >
+            {success}
+          </motion.div>
+        )}
+        
+        {error && (
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="fixed top-4 right-4 bg-red-500 text-white px-6 py-3 rounded-lg shadow-lg z-50"
+          >
+            {error}
+          </motion.div>
+        )}
       </motion.div>
     </AnimatePresence>
   );
