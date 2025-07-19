@@ -1,6 +1,20 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
-  // Configuration vide par défaut - appDir est activé par défaut dans Next.js 14
+  // Configuration pour éviter les erreurs de compilation
+  experimental: {
+    appDir: true,
+  },
+  // Gestion des erreurs de compilation
+  onDemandEntries: {
+    maxInactiveAge: 25 * 1000,
+    pagesBufferLength: 2,
+  },
+  // Optimisations pour le développement
+  swcMinify: true,
+  // Gestion des images
+  images: {
+    domains: [],
+  },
 }
 
 module.exports = nextConfig 
