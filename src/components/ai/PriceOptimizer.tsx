@@ -176,7 +176,7 @@ export function PriceOptimizer({ itemData, className = "" }: PriceOptimizerProps
         </div>
         <div className="ml-auto flex items-center gap-2">
           <Sparkles className="w-4 h-4 text-indigo-600" />
-          <span className="text-xs font-medium text-indigo-600">Claude AI</span>
+          <span className="text-xs font-medium text-indigo-600">Assistant IA</span>
         </div>
       </div>
 

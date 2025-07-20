@@ -1,11 +1,6 @@
 'use server'
 
-import { Anthropic } from '@anthropic-ai/sdk'
-
-// Configuration de l'API Claude
-const anthropic = new Anthropic({
-  apiKey: process.env.CLAUDE_API_KEY,
-})
+// Supprimer l'import et l'initialisation Anthropic
 
 export interface PriceRecommendation {
   suggestedPrice: number
@@ -51,6 +46,7 @@ export async function getPriceRecommendation(
   salesHistory: any[]
 ): Promise<PriceRecommendation> {
   try {
+    const apiKey = process.env.GEMINI_API_KEY;
     const prompt = `
 Tu es un expert en e-commerce spécialisé dans la revente sur Vinted. 
 Analyse les données suivantes et recommande un prix optimal :
@@ -69,24 +65,36 @@ Donne ta réponse au format JSON:
   "marketAnalysis": "analyse du marché",
   "confidence": number (0-100)
 }
-`
-
-    const response = await anthropic.messages.create({
-      model: 'claude-3-sonnet-20240229',
-      max_tokens: 1000,
-      messages: [{ role: 'user', content: prompt }],
-    })
-
-    const result = JSON.parse(response.content[0].text)
-    return result
+`;
+    const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-pro:generateContent?key=${apiKey}`,
+      {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          contents: [
+            {
+              parts: [
+                { text: prompt }
+              ]
+            }
+          ]
+        })
+      }
+    );
+    const data = await response.json();
+    const text = data.candidates?.[0]?.content?.parts?.[0]?.text || '';
+    const result = JSON.parse(text);
+    return result;
   } catch (error) {
-    console.error('Erreur lors de la recommandation de prix:', error)
+    console.error('Erreur lors de la recommandation de prix (Gemini):', error);
     return {
       suggestedPrice: currentPrice,
       reasoning: 'Erreur lors de l\'analyse',
       marketAnalysis: 'Données insuffisantes',
       confidence: 0
-    }
+    };
   }
 }
 
@@ -98,6 +106,7 @@ export async function getSalesForecast(
   category: string
 ): Promise<SalesForecast> {
   try {
+    const apiKey = process.env.GEMINI_API_KEY;
     const prompt = `
 Analyse l'historique des ventes suivant et prédit les ventes futures :
 
@@ -111,24 +120,36 @@ Donne ta réponse au format JSON:
   "trend": "up|down|stable",
   "factors": ["facteur1", "facteur2"]
 }
-`
-
-    const response = await anthropic.messages.create({
-      model: 'claude-3-sonnet-20240229',
-      max_tokens: 800,
-      messages: [{ role: 'user', content: prompt }],
-    })
-
-    const result = JSON.parse(response.content[0].text)
-    return result
+`;
+    const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-pro:generateContent?key=${apiKey}`,
+      {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          contents: [
+            {
+              parts: [
+                { text: prompt }
+              ]
+            }
+          ]
+        })
+      }
+    );
+    const data = await response.json();
+    const text = data.candidates?.[0]?.content?.parts?.[0]?.text || '';
+    const result = JSON.parse(text);
+    return result;
   } catch (error) {
-    console.error('Erreur lors de la prédiction des ventes:', error)
+    console.error('Erreur lors de la prédiction des ventes (Gemini):', error);
     return {
       nextWeek: 0,
       nextMonth: 0,
       trend: 'stable',
       factors: ['Données insuffisantes']
-    }
+    };
   }
 }
 
@@ -140,6 +161,7 @@ export async function detectDuplicates(
   inventory: any[]
 ): Promise<DuplicateDetection> {
   try {
+    const apiKey = process.env.GEMINI_API_KEY;
     const prompt = `
 Analyse si cet article est un doublon dans l'inventaire :
 
@@ -158,23 +180,35 @@ Donne ta réponse au format JSON:
     }
   ]
 }
-`
-
-    const response = await anthropic.messages.create({
-      model: 'claude-3-sonnet-20240229',
-      max_tokens: 600,
-      messages: [{ role: 'user', content: prompt }],
-    })
-
-    const result = JSON.parse(response.content[0].text)
-    return result
+`;
+    const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-pro:generateContent?key=${apiKey}`,
+      {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          contents: [
+            {
+              parts: [
+                { text: prompt }
+              ]
+            }
+          ]
+        })
+      }
+    );
+    const data = await response.json();
+    const text = data.candidates?.[0]?.content?.parts?.[0]?.text || '';
+    const result = JSON.parse(text);
+    return result;
   } catch (error) {
-    console.error('Erreur lors de la détection de doublons:', error)
+    console.error('Erreur lors de la détection de doublons (Gemini):', error);
     return {
       isDuplicate: false,
       confidence: 0,
       similarItems: []
-    }
+    };
   }
 }
 
@@ -186,6 +220,7 @@ export async function generateStockAlerts(
   salesHistory: any[]
 ): Promise<StockAlert[]> {
   try {
+    const apiKey = process.env.GEMINI_API_KEY;
     const prompt = `
 Analyse l'inventaire et l'historique des ventes pour générer des alertes de stock intelligentes :
 
@@ -202,19 +237,31 @@ Donne ta réponse au format JSON:
     "urgency": "low|medium|high"
   }
 ]
-`
-
-    const response = await anthropic.messages.create({
-      model: 'claude-3-sonnet-20240229',
-      max_tokens: 800,
-      messages: [{ role: 'user', content: prompt }],
-    })
-
-    const result = JSON.parse(response.content[0].text)
-    return result
+`;
+    const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-pro:generateContent?key=${apiKey}`,
+      {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          contents: [
+            {
+              parts: [
+                { text: prompt }
+              ]
+            }
+          ]
+        })
+      }
+    );
+    const data = await response.json();
+    const text = data.candidates?.[0]?.content?.parts?.[0]?.text || '';
+    const result = JSON.parse(text);
+    return result;
   } catch (error) {
-    console.error('Erreur lors de la génération d\'alertes:', error)
-    return []
+    console.error('Erreur lors de la génération d\'alertes (Gemini):', error);
+    return [];
   }
 }
 
@@ -226,23 +273,36 @@ export async function analyzeMarketTrends(
   salesData: any[]
 ): Promise<string> {
   try {
+    const apiKey = process.env.GEMINI_API_KEY;
     const prompt = `
 Analyse les tendances du marché pour la catégorie "${category}" basées sur ces données de ventes :
 
 ${JSON.stringify(salesData)}
 
 Donne une analyse concise et actionable en français.
-`
-
-    const response = await anthropic.messages.create({
-      model: 'claude-3-sonnet-20240229',
-      max_tokens: 500,
-      messages: [{ role: 'user', content: prompt }],
-    })
-
-    return response.content[0].text
+`;
+    const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-pro:generateContent?key=${apiKey}`,
+      {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          contents: [
+            {
+              parts: [
+                { text: prompt }
+              ]
+            }
+          ]
+        })
+      }
+    );
+    const data = await response.json();
+    const text = data.candidates?.[0]?.content?.parts?.[0]?.text || '';
+    return text;
   } catch (error) {
-    console.error('Erreur lors de l\'analyse des tendances:', error)
-    return 'Impossible d\'analyser les tendances du marché.'
+    console.error('Erreur lors de l\'analyse des tendances (Gemini):', error);
+    return 'Impossible d\'analyser les tendances du marché.';
   }
 } 

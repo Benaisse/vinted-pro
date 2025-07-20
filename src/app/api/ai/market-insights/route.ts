@@ -1,5 +1,4 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { getClaudeService } from '@/services/claudeAI';
 
 export async function POST(request: NextRequest) {
   try {
@@ -12,22 +11,39 @@ export async function POST(request: NextRequest) {
       );
     }
     
-    const claudeService = getClaudeService();
-    const insights = await claudeService.getMarketInsights(category, period);
-    
+    // Remplacer la clé API en dur par process.env.GEMINI_API_KEY
+    // Ajouter un commentaire : Ajouter GEMINI_API_KEY=... dans .env.local
+    const apiKey = process.env.GEMINI_API_KEY;
+    const prompt = `Insights marché Vinted pour la catégorie ${category} sur la période ${period}`;
+    const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-pro:generateContent?key=${apiKey}`,
+      {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          contents: [
+            {
+              parts: [
+                { text: prompt }
+              ]
+            }
+          ]
+        })
+      }
+    );
+    const data = await response.json();
+    const text = data.candidates?.[0]?.content?.parts?.[0]?.text || '';
+    const insights = JSON.parse(text);
     return NextResponse.json({
       success: true,
       data: insights,
-      usage: claudeService.getUsageStats()
+      usage: null
     });
 
   } catch (error) {
-    console.error('Market insights error:', error);
     return NextResponse.json(
-      { 
-        success: false, 
-        error: error instanceof Error ? error.message : 'Erreur lors de l\'analyse du marché' 
-      },
+      { success: false, error: error instanceof Error ? error.message : 'Erreur lors de l\'analyse du marché (Gemini)' },
       { status: 500 }
     );
   }

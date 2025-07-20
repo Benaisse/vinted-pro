@@ -183,7 +183,7 @@ export function TrendPredictor({ itemData, className = "" }: TrendPredictorProps
         </div>
         <div className="ml-auto flex items-center gap-2">
           <Sparkles className="w-4 h-4 text-indigo-600" />
-          <span className="text-xs font-medium text-indigo-600">Claude AI</span>
+          <span className="text-xs font-medium text-indigo-600">Assistant IA</span>
         </div>
       </div>
 
@@ -235,7 +235,7 @@ export function TrendPredictor({ itemData, className = "" }: TrendPredictorProps
             <RefreshCw className="w-8 h-8 text-indigo-600 animate-spin" />
           </div>
           <h4 className="text-lg font-medium text-slate-800 mb-2">Analyse en cours...</h4>
-          <p className="text-sm text-slate-600">Claude AI analyse les tendances du marché</p>
+          <p className="text-sm text-slate-600">Assistant IA analyse les tendances du marché</p>
         </motion.div>
       )}
 

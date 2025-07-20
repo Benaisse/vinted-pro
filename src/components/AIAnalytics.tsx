@@ -20,6 +20,7 @@ import {
   RefreshCw
 } from "lucide-react";
 import { ItemData, PriceAnalysis, PhotoAnalysis, OptimizedDescription, MarketInsights, PerformancePrediction } from '@/services/claudeAI';
+import { useData } from '@/contexts/DataContext';
 
 interface AIAnalyticsProps {
   itemData?: ItemData;
@@ -27,6 +28,7 @@ interface AIAnalyticsProps {
 }
 
 export function AIAnalytics({ itemData, onClose }: AIAnalyticsProps) {
+  const { ventes } = useData();
   const [activeTab, setActiveTab] = useState<'price' | 'photo' | 'description' | 'market' | 'performance'>('price');
   const [loading, setLoading] = useState(false);
   const [results, setResults] = useState<{
@@ -85,7 +87,8 @@ export function AIAnalytics({ itemData, onClose }: AIAnalyticsProps) {
       alert('Veuillez remplir les champs obligatoires');
       return;
     }
-    callAI('analyze-price', formData);
+    // Injection de l'historique des ventes dans le prompt
+    callAI('analyze-price', { ...formData, salesHistory: ventes });
   };
 
   const handleAnalyzePhoto = () => {
@@ -109,7 +112,8 @@ export function AIAnalytics({ itemData, onClose }: AIAnalyticsProps) {
       alert('Veuillez entrer une catégorie');
       return;
     }
-    callAI('market-insights', { category: formData.category, period: '30d' });
+    // Injection de l'historique des ventes dans le prompt
+    callAI('market-insights', { category: formData.category, period: '30d', salesHistory: ventes });
   };
 
   const handlePredictPerformance = () => {
@@ -117,7 +121,8 @@ export function AIAnalytics({ itemData, onClose }: AIAnalyticsProps) {
       alert('Veuillez remplir les champs obligatoires');
       return;
     }
-    callAI('predict-performance', formData);
+    // Injection de l'historique des ventes dans le prompt
+    callAI('predict-performance', { ...formData, salesHistory: ventes });
   };
 
   const renderPriceAnalysis = () => (
@@ -618,7 +623,7 @@ export function AIAnalytics({ itemData, onClose }: AIAnalyticsProps) {
             </div>
             <div>
               <h2 className="text-xl font-bold">AI Analytics Vinted</h2>
-              <p className="text-indigo-100 text-sm">Analysez et optimisez vos articles avec Claude AI</p>
+              <p className="text-indigo-100 text-sm">Analysez et optimisez vos articles avec l'Assistant IA</p>
             </div>
           </div>
           {onClose && (

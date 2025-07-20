@@ -217,7 +217,7 @@ export function AIAssistant({ isOpen, onClose, context }: AIAssistantProps) {
                 </div>
                 <div>
                   <h2 id="ai-assistant-title" className="text-xl font-bold">Assistant Vinted Pro</h2>
-                  <p className="text-indigo-100 text-sm">Powered by Claude AI</p>
+                  <p className="text-indigo-100 text-sm">Propulsé par Assistant IA</p>
                 </div>
               </div>
               <Button
@@ -271,7 +271,7 @@ export function AIAssistant({ isOpen, onClose, context }: AIAssistantProps) {
                 >
                   <div className="bg-slate-100 rounded-2xl p-4 flex items-center gap-3">
                     <Loader2 className="w-4 h-4 animate-spin text-indigo-600" />
-                    <p className="text-sm text-slate-600">Claude réfléchit...</p>
+                    <p className="text-sm text-slate-600">Assistant IA réfléchit...</p>
                   </div>
                 </motion.div>
               )}
@@ -316,16 +316,16 @@ export function AIAssistant({ isOpen, onClose, context }: AIAssistantProps) {
                   ref={inputRef}
                   value={inputValue}
                   onChange={(e) => setInputValue(e.target.value)}
-                  placeholder="Posez votre question à Claude..."
+                  placeholder="Posez votre question à l'Assistant IA..."
                   className="flex-1 rounded-xl border-slate-300 focus:border-indigo-500 focus:ring-indigo-500"
                   disabled={isLoading}
-                  aria-label="Zone de saisie pour l’assistant AI"
+                  aria-label="Zone de saisie pour l’assistant IA"
                 />
                 <Button
                   type="submit"
                   disabled={isLoading || !inputValue.trim()}
                   className="bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 text-white rounded-xl px-6 transition-all duration-200 hover:scale-105"
-                  aria-label="Envoyer la question à l’assistant AI"
+                  aria-label="Envoyer la question à l’assistant IA"
                 >
                   {isLoading ? (
                     <Loader2 className="w-4 h-4 animate-spin" />

@@ -1,5 +1,3 @@
-import Anthropic from '@anthropic-ai/sdk';
-
 // Types TypeScript
 export interface ItemData {
   name: string;
@@ -88,7 +86,6 @@ interface CacheEntry {
 }
 
 class ClaudeAIService {
-  private client: Anthropic;
   private cache: Map<string, CacheEntry> = new Map();
   private usage: AIUsage[] = [];
   private rateLimitDelay = 1000; // 1 seconde entre les appels
@@ -100,9 +97,7 @@ class ClaudeAIService {
       throw new Error('CLAUDE_API_KEY environment variable is required');
     }
     
-    this.client = new Anthropic({
-      apiKey,
-    });
+    // Supprimer l'initialisation Anthropic
   }
 
   // Gestion du cache
@@ -157,29 +152,33 @@ class ClaudeAIService {
     });
   }
 
-  // Appel générique à Claude
-  private async callClaude(prompt: string, systemPrompt: string): Promise<string> {
-    await this.rateLimit();
-
-    try {
-      const response = await this.client.messages.create({
-        model: 'claude-3-5-sonnet-20241022',
-        max_tokens: 2000,
-        messages: [{ role: 'user', content: prompt }],
-        system: systemPrompt,
-      });
-
-      const content = response.content[0];
-      if (content.type === 'text') {
-        this.trackUsage('claude_call', response.usage.input_tokens + response.usage.output_tokens);
-        return content.text;
-      }
-      
-      throw new Error('Invalid response format from Claude');
-    } catch (error) {
-      console.error('Claude API error:', error);
-      throw new Error(`AI service error: ${error instanceof Error ? error.message : 'Unknown error'}`);
+  // Appel générique à Gemini
+  private async callGemini(prompt: string, systemPrompt: string): Promise<string> {
+    const apiKey = process.env.GEMINI_API_KEY;
+    if (!apiKey) {
+      throw new Error('GEMINI_API_KEY environment variable is required for Gemini API calls.');
     }
+    const fullPrompt = `${systemPrompt}\n\n${prompt}`;
+    const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-pro:generateContent?key=${apiKey}`,
+      {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          contents: [
+            {
+              parts: [
+                { text: fullPrompt }
+              ]
+            }
+          ]
+        })
+      }
+    );
+    const data = await response.json();
+    const text = data.candidates?.[0]?.content?.parts?.[0]?.text || '';
+    return text;
   }
 
   // 1. Analyse de prix
@@ -215,7 +214,7 @@ class ClaudeAIService {
     
     Donne une analyse détaillée et un prix de vente recommandé.`;
 
-    const response = await this.callClaude(prompt, systemPrompt);
+    const response = await this.callGemini(prompt, systemPrompt);
     const analysis = JSON.parse(response);
     
     this.setCachedResponse(cacheKey, analysis);
@@ -249,7 +248,7 @@ class ClaudeAIService {
     
     Donne un score de 1 à 10 et des recommandations spécifiques.`;
 
-    const response = await this.callClaude(prompt, systemPrompt);
+    const response = await this.callGemini(prompt, systemPrompt);
     const analysis = JSON.parse(response);
     
     this.setCachedResponse(cacheKey, analysis);
@@ -289,7 +288,7 @@ class ClaudeAIService {
     
     Utilise les meilleures pratiques Vinted pour maximiser la visibilité et les ventes.`;
 
-    const response = await this.callClaude(prompt, systemPrompt);
+    const response = await this.callGemini(prompt, systemPrompt);
     const optimization = JSON.parse(response);
     
     this.setCachedResponse(cacheKey, optimization);
@@ -328,7 +327,7 @@ class ClaudeAIService {
     
     Base ton analyse sur les données de marché Vinted récentes.`;
 
-    const response = await this.callClaude(prompt, systemPrompt);
+    const response = await this.callGemini(prompt, systemPrompt);
     const insights = JSON.parse(response);
     
     this.setCachedResponse(cacheKey, insights);
@@ -373,7 +372,7 @@ class ClaudeAIService {
     
     Base ta prédiction sur les patterns de vente Vinted.`;
 
-    const response = await this.callClaude(prompt, systemPrompt);
+    const response = await this.callGemini(prompt, systemPrompt);
     const prediction = JSON.parse(response);
     
     this.setCachedResponse(cacheKey, prediction);

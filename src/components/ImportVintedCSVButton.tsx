@@ -1,122 +1,101 @@
 "use client";
 import React, { useRef, useState } from "react";
-import Papa from "papaparse";
 import { Button } from "@/components/ui/button";
+import { Upload, Trash2, X, Check } from "lucide-react";
 import { toast } from "react-hot-toast";
-// import { Article } from "@/components/ArticleFormModal"; // supprimé car conflit avec la déclaration locale
-import type { ParseResult } from "papaparse";
-import { Upload, Trash2, Edit2, Check, X } from "lucide-react";
+import { detectFileFormat, SupportedFormat } from "@/lib/UniversalFormatDetector";
+import { VintedUniversalParser, VintedArticle } from "@/lib/VintedUniversalParser";
 
-interface Article {
-  nom: string;
-  acheteur?: string;
-  prix: number;
-  date: string;
-  [key: string]: any;
-}
-
-export function ImportVintedSmartButton({ onImport }: { onImport: (articles: Article[]) => void }) {
+export function ImportVintedModal({ onImport }: { onImport: (articles: VintedArticle[]) => void }) {
   const inputRef = useRef<HTMLInputElement>(null);
-  const [preview, setPreview] = useState<Article[]>([]);
-  const [editIndex, setEditIndex] = useState<number | null>(null);
-  const [editArticle, setEditArticle] = useState<Article | null>(null);
-  // 1. Ajouter un état pour ouvrir/fermer la modal
+  const [preview, setPreview] = useState<VintedArticle[]>([]);
+  const [detectedFormat, setDetectedFormat] = useState<SupportedFormat | null>(null);
   const [modalOpen, setModalOpen] = useState(false);
+  const [rawContent, setRawContent] = useState<string>("");
 
-  // Détection et parsing intelligent
+  // Gestion du fichier ou du texte collé
   const handleFiles = async (files: FileList | null) => {
     if (!files) return;
-    let allArticles: Article[] = [];
+    let allArticles: VintedArticle[] = [];
+    let format: SupportedFormat | null = null;
     for (const file of Array.from(files)) {
       const text = await file.text();
-      if (file.name.endsWith('.csv')) {
-        // CSV Vinted
-        const result = Papa.parse(text, { header: true });
-        const articles = (result.data as any[]).map(row => ({
-          nom: row["Nom de l'article"] || row["Article"] || row["Nom"] || "",
-          acheteur: row["Acheteur"] || row["Acheteuse"] || row["Acheteur/Acheteuse"] || "",
-          prix: parseFloat(row["Prix"] || row["Montant"] || row["Prix de vente"] || "0"),
-          date: extractDate(text), // Utiliser la nouvelle fonction pour extraire la date
-          ...row
-        })).filter(a => a.nom && a.prix);
-        allArticles = allArticles.concat(articles);
-      } else if (file.name.endsWith('.html')) {
-        // HTML Vinted (extraction basique)
-        const parser = new DOMParser();
-        const doc = parser.parseFromString(text, "text/html");
-        // Recherche des blocs de commandes/articles (à adapter selon structure)
-        const blocks = Array.from(doc.querySelectorAll('body *')).filter(el => el.textContent?.includes('Commandé') || el.textContent?.includes('Articles:'));
-        for (const block of blocks) {
-          const txt = block.textContent || "";
-          // Extraction par regex (à affiner selon structure)
-          const nomMatch = txt.match(/Article[s]?:\s*(.+?)(?:\n|$)/i);
-          const acheteurMatch = txt.match(/Acheteur[s]?:\s*(.+?)(?:\n|$)/i);
-          const prixMatch = txt.match(/Prix|Montant|Total:\s*([\d,.]+) ?€/i);
-          const dateMatch = txt.match(/(\d{1,2}\/\d{1,2}\/\d{2,4})/);
-          allArticles.push({
-            nom: nomMatch?.[1]?.trim() || "",
-            acheteur: acheteurMatch?.[1]?.trim() || "",
-            prix: extractPrix(txt),
-            date: dateMatch?.[1] || "",
-            brut: txt
-          });
-        }
-      }
+      format = detectFileFormat(text, file.name);
+      setDetectedFormat(format);
+      const articles = VintedUniversalParser.parse(text, file.name);
+      allArticles = allArticles.concat(articles);
     }
     setPreview(allArticles);
     if (allArticles.length === 0) toast.error("Aucun article détecté dans les fichiers importés.");
   };
-
-  // Edition d'un article
-  const handleEdit = (idx: number, field: string, value: string) => {
-    setEditIndex(idx);
-    setEditArticle({ ...preview[idx], [field]: value });
-  };
-  const handleEditSave = () => {
-    if (editIndex === null || !editArticle) return;
-    const updated = [...preview];
-    updated[editIndex] = editArticle;
-    setPreview(updated);
-    setEditIndex(null);
-    setEditArticle(null);
-  };
-  const handleEditCancel = () => {
-    setEditIndex(null);
-    setEditArticle(null);
-  };
-  // Suppression d'un article
-  const handleDelete = (idx: number) => {
-    setPreview(preview.filter((_, i) => i !== idx));
+  // Gestion du collage direct
+  const handlePaste = (e: React.ClipboardEvent<HTMLTextAreaElement>) => {
+    const text = e.clipboardData.getData("text");
+    setRawContent(text);
+    const format = detectFileFormat(text);
+    setDetectedFormat(format);
+    const articles = VintedUniversalParser.parse(text);
+    setPreview(articles);
+    if (articles.length === 0) toast.error("Aucun article détecté dans le texte collé.");
   };
   // Validation
   const handleValidate = () => {
     if (preview.length === 0) return toast.error("Aucun article à importer.");
     onImport(preview);
     setPreview([]);
+    setRawContent("");
+    setDetectedFormat(null);
     toast.success("Articles importés avec succès !");
-    setModalOpen(false); // Fermer la modal après validation
+    setModalOpen(false);
   };
-
+  // Suppression d'un article
+  const handleDelete = (idx: number) => {
+    setPreview(preview.filter((_, i) => i !== idx));
+  };
+  // Edition inline (optionnel)
+  const handleEdit = (idx: number, field: string, value: string) => {
+    const updated = [...preview];
+    updated[idx] = { ...updated[idx], [field]: value };
+    setPreview(updated);
+  };
   return (
     <div>
       <Button onClick={() => setModalOpen(true)} className="bg-gradient-to-r from-indigo-500 to-purple-500 text-white font-bold px-6 py-3 rounded-xl shadow-lg hover:scale-105 transition-all duration-200">
         <Upload className="w-5 h-5 mr-2" /> Importer Vinted
       </Button>
-
-      {/* 3. Modal moderne (avec drag & drop, instructions, preview, édition inline) */}
       {modalOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm">
           <div className="bg-white rounded-2xl shadow-2xl p-8 w-full max-w-3xl relative animate-fade-in">
             <button className="absolute top-4 right-4 text-slate-400 hover:text-red-500" onClick={() => setModalOpen(false)}><X className="w-6 h-6" /></button>
             <h2 className="text-2xl font-bold mb-2 text-indigo-700">Importer vos données Vinted</h2>
-            <p className="mb-4 text-slate-600">Glissez-déposez un ou plusieurs fichiers CSV/HTML ou cliquez pour sélectionner. Les prix et dates sont détectés automatiquement.</p>
-            {/* Drag & drop + input file */}
+            <p className="mb-4 text-slate-600">Glissez-déposez un ou plusieurs fichiers (HTML, CSV, TXT, JSON, XML) ou collez directement vos données. Le format est détecté automatiquement.</p>
             <div className="border-2 border-dashed border-indigo-300 rounded-xl p-6 mb-6 flex flex-col items-center justify-center cursor-pointer hover:bg-indigo-50 transition" onClick={() => inputRef.current?.click()}>
               <Upload className="w-10 h-10 text-indigo-400 mb-2" />
               <span className="text-indigo-600 font-semibold">Déposez vos fichiers ici ou cliquez pour choisir</span>
-              <input ref={inputRef} type="file" accept=".csv,.html,.htm" multiple className="hidden" onChange={e => handleFiles(e.target.files)} />
+              <input ref={inputRef} type="file" accept=".csv,.html,.htm,.txt,.json,.xml" multiple className="hidden" onChange={e => handleFiles(e.target.files)} />
             </div>
-            {/* Prévisualisation et édition inline */}
+            <div className="mb-4">
+              <textarea
+                className="w-full border border-indigo-200 rounded-xl p-3 text-sm mb-2"
+                rows={3}
+                placeholder="Ou collez vos données Vinted ici..."
+                value={rawContent}
+                onChange={e => {
+                  setRawContent(e.target.value);
+                  const format = detectFileFormat(e.target.value);
+                  setDetectedFormat(format);
+                  const articles = VintedUniversalParser.parse(e.target.value);
+                  setPreview(articles);
+                }}
+                onPaste={handlePaste}
+              />
+              {detectedFormat && (
+                <div className="inline-flex items-center gap-2 px-3 py-1 bg-green-100 text-green-700 rounded-full">
+                  <Check className="h-4 w-4" />
+                  Format détecté: {detectedFormat.toUpperCase()}
+                </div>
+              )}
+            </div>
             {preview && preview.length > 0 && (
               <div className="overflow-x-auto max-h-96 mb-4">
                 <table className="min-w-full text-sm border rounded-xl shadow">
@@ -153,7 +132,6 @@ export function ImportVintedSmartButton({ onImport }: { onImport: (articles: Art
                 </table>
               </div>
             )}
-            {/* Validation */}
             <div className="flex justify-end gap-2 mt-4">
               <Button variant="outline" onClick={() => setModalOpen(false)}>Annuler</Button>
               <Button className="bg-gradient-to-r from-indigo-500 to-purple-500 text-white font-bold px-6 py-2 rounded-xl shadow hover:scale-105 transition-all duration-200" onClick={handleValidate}>Valider l'import</Button>
@@ -163,88 +141,4 @@ export function ImportVintedSmartButton({ onImport }: { onImport: (articles: Art
       )}
     </div>
   );
-}
-
-// 4. Améliorer la détection des prix et dates
-// Extraction avancée du prix
-function extractPrix(text: string): number {
-  // Cherche un nombre (avec ou sans virgule/décimale) suivi ou non du symbole € ou e
-  const match = text.match(/([0-9]+[\.,]?[0-9]*)\s*(€|e)?/i);
-  if (match && match[1]) {
-    return parseFloat(match[1].replace(',', '.').replace(/[^0-9.]/g, ''));
-  }
-  return 0;
-}
-
-// Extraction avancée de la date
-function extractDate(text: string): string {
-  // Formats courants : 01/05/2024, 2024-05-01, 1 mai 2024, 1er mai 2024, etc.
-  const regexes = [
-    /\b(\d{1,2}[\/\-]\d{1,2}[\/\-]\d{2,4})\b/, // 01/05/2024 ou 01-05-2024
-    /\b(\d{4}[\/\-]\d{1,2}[\/\-]\d{1,2})\b/,   // 2024-05-01
-    /\b(\d{1,2}(er)? [a-zA-Zéûî]+ \d{4})\b/,       // 1 mai 2024, 1er mai 2024
-  ];
-  for (const regex of regexes) {
-    const match = text.match(regex);
-    if (match && match[1]) return match[1];
-  }
-  return '';
-}
-
-// Extraction du nom de l'article
-function extractNom(text: string): string {
-  // Prend la partie avant le prix ou l'acheteur si possible
-  const prixIdx = text.search(/([0-9]+[\.,]?[0-9]*)\s*(€|e)?/i);
-  if (prixIdx > 0) return text.slice(0, prixIdx).trim();
-  return text.trim();
-}
-
-// Extraction de l'acheteur
-function extractAcheteur(text: string): string {
-  // Cherche un pseudo (lettres/chiffres) après "par" ou "à" ou "acheté par"
-  const match = text.match(/(?:par|à|acheté par)\s*([a-zA-Z0-9_\-]+)/i);
-  if (match && match[1]) return match[1];
-  return '';
-}
-
-// Nettoyage et validation des lignes extraites
-function cleanExtractedData(data: any[]): any[] {
-  return data
-    .map(row => ({
-      ...row,
-      nom: row.nom ? row.nom.trim() : '',
-      acheteur: row.acheteur ? row.acheteur.trim() : '',
-      prix: typeof row.prix === 'number' ? row.prix : extractPrix(row.prix || ''),
-      date: row.date ? extractDate(row.date) : '',
-    }))
-    .filter(row => row.nom || row.acheteur || row.prix > 0 || row.date) // supprime les lignes vides
-}
-
-// Nouvelle fonction de parsing HTML Vinted structurée
-function parseVintedHTML(html: string): Article[] {
-  // Extraction par blocs Commande
-  const blocks = html.split(/Commande:/).slice(1); // ignore le premier split vide
-  const articles: Article[] = [];
-  for (const block of blocks) {
-    // Date de la commande
-    const dateMatch = block.match(/(\d{4}-\d{2}-\d{2}|\d{2}\/\d{2}\/\d{4}|\d{2}\.\d{2}\.\d{4}|\d{4}\/\d{2}\/\d{2}|\d{4}\.\d{2}\.\d{2}|\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2})/);
-    const date = dateMatch ? dateMatch[0].split(' ')[0].replace(/\./g, '/').replace(/-/g, '/') : '';
-    // Acheteur
-    const acheteurMatch = block.match(/Acheteur:\s*([a-zA-Z0-9_\-]+)/);
-    const acheteur = acheteurMatch ? acheteurMatch[1] : '';
-    // Section articles
-    const articlesSection = block.split('Articles:')[1] || '';
-    // Chaque ligne d'article
-    const lines = articlesSection.split(/\n|<br\s*\/?\s*>|•/).map(l => l.trim()).filter(l => l);
-    for (const line of lines) {
-      // Nom et prix
-      const prixMatch = line.match(/([0-9]+[\.,]?[0-9]*)\s*(EUR|€)/i);
-      const prix = prixMatch ? parseFloat(prixMatch[1].replace(',', '.')) : 0;
-      const nom = prixMatch ? line.slice(0, prixMatch.index).replace(/[-:•]$/, '').trim() : line.trim();
-      if (nom && prix > 0) {
-        articles.push({ nom, acheteur, prix, date });
-      }
-    }
-  }
-  return articles;
 } 

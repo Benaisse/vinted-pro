@@ -2,7 +2,7 @@
 const nextConfig = {
   // Configuration pour éviter les erreurs de compilation
   experimental: {
-    appDir: true,
+    // appDir: true, // supprimé car obsolète
   },
   // Gestion des erreurs de compilation
   onDemandEntries: {

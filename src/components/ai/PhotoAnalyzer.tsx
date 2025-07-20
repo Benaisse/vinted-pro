@@ -190,11 +190,11 @@ export function PhotoAnalyzer({ itemData, className = "" }: PhotoAnalyzerProps) 
         </div>
         <div>
           <h3 className="text-lg font-semibold text-slate-800">Analyseur de Photos AI</h3>
-          <p className="text-sm text-slate-600">Optimisez vos photos avec Claude AI</p>
+          <p className="text-sm text-slate-600">Optimisez vos photos avec l'Assistant IA</p>
         </div>
         <div className="ml-auto flex items-center gap-2">
           <Sparkles className="w-4 h-4 text-indigo-600" />
-          <span className="text-xs font-medium text-indigo-600">Claude AI</span>
+          <span className="text-xs font-medium text-indigo-600">Assistant IA</span>
         </div>
       </div>
 

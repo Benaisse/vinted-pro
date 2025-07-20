@@ -25,13 +25,15 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     }
     const getUser = async () => {
       try {
-        const { data, error } = await supabase.auth.getUser();
+        if (!supabase) throw new Error('Supabase client non initialisé');
+        const { data, error } = await supabase.auth.getSession();
+        console.log('Résultat getSession:', { data, error }); // LOG DEBUG
         if (error) throw error;
-        setUser(data?.user ?? null);
+        setUser(data?.session?.user ?? null);
       } catch (err: any) {
         setError('Erreur lors de la récupération de l’utilisateur.');
         setUser(null);
-        console.error(err);
+        console.error('Erreur détaillée Supabase getSession:', err); // LOG DEBUG
       } finally {
         setLoading(false);
       }
@@ -58,6 +60,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     setLoading(true);
     setError(null);
     try {
+      if (!supabase) throw new Error('Supabase client non initialisé');
       const { data, error } = await supabase.auth.signUp({ email, password });
       if (error) throw error;
       return data;
@@ -74,6 +77,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     setLoading(true);
     setError(null);
     try {
+      if (!supabase) throw new Error('Supabase client non initialisé');
       const { data, error } = await supabase.auth.signInWithPassword({ email, password });
       if (error) throw error;
       return data;
@@ -90,6 +94,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     setLoading(true);
     setError(null);
     try {
+      if (!supabase) throw new Error('Supabase client non initialisé');
       await supabase.auth.signOut();
       setUser(null);
     } catch (err: any) {
@@ -105,6 +110,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     setLoading(true);
     setError(null);
     try {
+      if (!supabase) throw new Error('Supabase client non initialisé');
       const { error } = await supabase.auth.signInWithOAuth({ provider: 'google' });
       if (error) throw error;
     } catch (err: any) {
