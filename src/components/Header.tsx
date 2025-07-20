@@ -216,7 +216,9 @@ export function Header({
   // Hooks
   const router = useRouter();
   const { addArticle, stats } = useData();
-  const { signOut, user } = useAuth();
+  const { user, signOut } = useAuth();
+  // DEBUG: Afficher le contenu de l'utilisateur dans la console
+  console.log("USER HEADER", user);
   
   // État des notifications avec types stricts
   const [notifications, setNotifications] = useState<Notification[]>([
@@ -309,10 +311,19 @@ export function Header({
     router.push('/login');
   }, [signOut, router]);
 
+  // Fonction utilitaire pour le nom affiché
+  const getDisplayName = () => {
+    if (user?.user_metadata?.full_name) return user.user_metadata.full_name;
+    if (user?.user_metadata?.name) return user.user_metadata.name;
+    if (user?.email) return user.email;
+    return "Utilisateur";
+  };
+
   const getInitials = useCallback(() => {
-    if (!user?.name) return 'U';
-    return user.name.split(' ').map((n: string) => n[0]).join('').toUpperCase();
-  }, [user?.name]);
+    const displayName = getDisplayName();
+    if (!displayName) return 'U';
+    return displayName.split(' ').map((n: string) => n[0]).join('').toUpperCase();
+  }, [user]);
 
   const handleAddArticle = useCallback((articleData: any) => {
     addArticle(articleData);
@@ -572,7 +583,7 @@ export function Header({
                   <span className="text-white font-bold text-sm">{getInitials()}</span>
                 </div>
                 <div>
-                  <p className="font-semibold text-sm">{user?.name || 'Utilisateur'}</p>
+                  <p className="font-semibold text-sm">{getDisplayName()}</p>
                   <p className="text-xs text-gray-500">{user?.email}</p>
                 </div>
               </div>

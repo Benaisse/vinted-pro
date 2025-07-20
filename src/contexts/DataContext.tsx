@@ -2,9 +2,6 @@
 
 import React, { createContext, useContext, useState, useEffect } from "react";
 import { Article } from "@/components/ArticleFormModal";
-import { inventaire as inventaireData } from "@/data/inventaire";
-import { ventes as ventesData } from "@/data/ventes";
-import { stock as stockData } from "@/data/stock";
 import { supabase } from '@/lib/supabaseClient';
 import { useAuth } from './AuthContext';
 
@@ -93,6 +90,7 @@ export const DataProvider = ({ children }: { children: React.ReactNode }) => {
     setIsLoaded(false);
     setError(null);
     const fetchArticles = async () => {
+      if (!supabase) return;
       const { data, error } = await supabase
         .from('inventaire')
         .select('*')
@@ -115,6 +113,7 @@ export const DataProvider = ({ children }: { children: React.ReactNode }) => {
     setIsLoaded(false);
     setError(null);
     const fetchStock = async () => {
+      if (!supabase) return;
       const { data, error } = await supabase
         .from('stock')
         .select('*')
@@ -137,6 +136,7 @@ export const DataProvider = ({ children }: { children: React.ReactNode }) => {
     setIsLoaded(false);
     setError(null);
     const fetchVentes = async () => {
+      if (!supabase) return;
       const { data, error } = await supabase
         .from('ventes')
         .select('*')
@@ -169,6 +169,7 @@ export const DataProvider = ({ children }: { children: React.ReactNode }) => {
   const addArticle = async (article: Article) => {
     setError(null);
     try {
+      if (!supabase) return;
       const { data, error } = await supabase
         .from('inventaire')
         .insert([{ ...article, user_id: user.id }])
@@ -185,6 +186,7 @@ export const DataProvider = ({ children }: { children: React.ReactNode }) => {
   const updateArticle = async (article: Article) => {
     setError(null);
     try {
+      if (!supabase) return;
       const { data, error } = await supabase
         .from('inventaire')
         .update({ ...article })
@@ -203,6 +205,7 @@ export const DataProvider = ({ children }: { children: React.ReactNode }) => {
   const deleteArticle = async (id: number) => {
     setError(null);
     try {
+      if (!supabase) return;
       const { error } = await supabase
         .from('inventaire')
         .delete()
@@ -247,6 +250,7 @@ export const DataProvider = ({ children }: { children: React.ReactNode }) => {
   const addStockItem = async (item: Omit<StockItem, 'id'>) => {
     setError(null);
     try {
+      if (!supabase) return;
       const { data, error } = await supabase
         .from('stock')
         .insert([{ ...item, user_id: user.id }])
@@ -263,6 +267,7 @@ export const DataProvider = ({ children }: { children: React.ReactNode }) => {
   const updateStock = async (item: StockItem) => {
     setError(null);
     try {
+      if (!supabase) return;
       const { data, error } = await supabase
         .from('stock')
         .update({ ...item })
@@ -281,6 +286,7 @@ export const DataProvider = ({ children }: { children: React.ReactNode }) => {
   const deleteStockItem = async (id: number) => {
     setError(null);
     try {
+      if (!supabase) return;
       const { error } = await supabase
         .from('stock')
         .delete()
@@ -382,6 +388,15 @@ export const DataProvider = ({ children }: { children: React.ReactNode }) => {
       setIsLoaded(true);
     }
   }, []);
+
+  // Réinitialiser le localStorage à la première connexion d'un nouvel utilisateur
+  useEffect(() => {
+    if (!user || authLoading) return;
+    // Réinitialiser le localStorage pour un nouvel utilisateur
+    localStorage.removeItem('vinted-pro-articles');
+    localStorage.removeItem('vinted-pro-ventes');
+    localStorage.removeItem('vinted-pro-stock');
+  }, [user?.id]);
 
   if (!isLoaded && !authLoading) return <div>Chargement des ventes...</div>;
   if (error) return <div style={{ color: 'red', padding: 16 }}>{error}</div>;
