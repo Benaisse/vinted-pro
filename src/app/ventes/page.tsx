@@ -382,6 +382,36 @@ export default function VentesPage() {
     }
   };
 
+  // Calcul dynamique de la période précédente pour ventes
+  function getPreviousPeriodDatesVentes(dateDebut: string, dateFin: string) {
+    if (!dateDebut || !dateFin) return { prevStart: '', prevEnd: '' };
+    const start = new Date(dateDebut);
+    const end = new Date(dateFin);
+    const diff = end.getTime() - start.getTime();
+    const prevEnd = new Date(start); prevEnd.setDate(start.getDate() - 1);
+    const prevStart = new Date(prevEnd.getTime() - diff);
+    return {
+      prevStart: prevStart.toISOString().split('T')[0],
+      prevEnd: prevEnd.toISOString().split('T')[0]
+    };
+  }
+  const { prevStart, prevEnd } = getPreviousPeriodDatesVentes(dateDebut, dateFin);
+  const previousVentes = ventes.filter((vente) => {
+    if (!prevStart || !prevEnd) return false;
+    return vente.date >= prevStart && vente.date <= prevEnd;
+  });
+  function getTendance(current: number, previous: number) {
+    if (previous === 0) return current === 0 ? 0 : 100;
+    return ((current - previous) / previous) * 100;
+  }
+  const tendanceVentes = getTendance(stats.ventesTotales, previousVentes.length);
+  const tendanceCA = getTendance(stats.chiffreAffaires, previousVentes.reduce((sum, v) => sum + v.prix, 0));
+  const tendanceMarge = getTendance(stats.revenuNet, previousVentes.reduce((sum, v) => sum + v.marge, 0));
+  const tendancePanier = getTendance(
+    stats.panierMoyen,
+    previousVentes.length > 0 ? previousVentes.reduce((sum, v) => sum + v.prix, 0) / previousVentes.length : 0
+  );
+
   return (
     <AnimatePresence mode="wait">
       <motion.div
@@ -453,7 +483,7 @@ export default function VentesPage() {
             subtitle="Cette période"
             icon={<Package className="w-6 h-6" />}
             color="purple"
-            trend="+12%"
+            trend={`${tendanceVentes >= 0 ? '+' : ''}${tendanceVentes.toFixed(1)}%`}
           />
           <StatCard
             title="Chiffre d'affaires"
@@ -461,7 +491,7 @@ export default function VentesPage() {
             subtitle="Total des ventes"
             icon={<DollarSign className="w-6 h-6" />}
             color="blue"
-            trend="+8%"
+            trend={`${tendanceCA >= 0 ? '+' : ''}${tendanceCA.toFixed(1)}%`}
           />
           <StatCard
             title="Revenu net"
@@ -469,7 +499,7 @@ export default function VentesPage() {
             subtitle="Après coût d'achat"
             icon={<TrendingUp className="w-6 h-6" />}
             color="green"
-            trend="+15%"
+            trend={`${tendanceMarge >= 0 ? '+' : ''}${tendanceMarge.toFixed(1)}%`}
           />
           <StatCard
             title="Panier moyen"
@@ -477,7 +507,7 @@ export default function VentesPage() {
             subtitle="Par vente"
             icon={<Users className="w-6 h-6" />}
             color="orange"
-            trend="+5%"
+            trend={`${tendancePanier >= 0 ? '+' : ''}${tendancePanier.toFixed(1)}%`}
           />
         </motion.div>
 

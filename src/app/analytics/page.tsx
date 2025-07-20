@@ -155,6 +155,27 @@ export default function AnalyticsPage() {
     return insights;
   }, [articles, stock]);
 
+  // Dataset dynamique pour les graphiques (groupé par mois)
+  const mois = ["Jan", "Fév", "Mar", "Avr", "Mai", "Juin", "Juil", "Août", "Sep", "Oct", "Nov", "Déc"];
+  const ventesParMois = useMemo(() => {
+    const grouped = Array(12).fill(0).map((_, i) => ({
+      name: mois[i],
+      ventes: 0,
+      revenus: 0,
+      marge: 0
+    }));
+    ventes.forEach(v => {
+      const [day, month, year] = v.date.split('/');
+      const idx = parseInt(month, 10) - 1;
+      if (grouped[idx]) {
+        grouped[idx].ventes += 1;
+        grouped[idx].revenus += v.prix;
+        grouped[idx].marge += v.marge;
+      }
+    });
+    return grouped;
+  }, [ventes]);
+
   const categories = ["Toutes", "Vêtements", "Chaussures", "Sacs", "Accessoires"];
   const periodes = [
     { value: "7jours", label: "7 jours" },
@@ -163,6 +184,99 @@ export default function AnalyticsPage() {
     { value: "6mois", label: "6 mois" },
     { value: "1an", label: "1 an" }
   ];
+
+  // Calcul dynamique de la période précédente pour analytics
+  function getPreviousPeriodDatesAnalytics(period: string) {
+    const now = new Date();
+    let endDate = new Date(now);
+    let startDate = new Date(now);
+    let prevEnd = new Date(now);
+    let prevStart = new Date(now);
+    switch (period) {
+      case '7jours':
+        endDate = new Date(now);
+        startDate = new Date(now); startDate.setDate(now.getDate() - 7);
+        prevEnd = new Date(startDate); prevEnd.setDate(startDate.getDate() - 1);
+        prevStart = new Date(prevEnd); prevStart.setDate(prevEnd.getDate() - 7);
+        break;
+      case '30jours':
+        endDate = new Date(now);
+        startDate = new Date(now); startDate.setDate(now.getDate() - 30);
+        prevEnd = new Date(startDate); prevEnd.setDate(startDate.getDate() - 1);
+        prevStart = new Date(prevEnd); prevStart.setDate(prevEnd.getDate() - 30);
+        break;
+      case '3mois':
+        endDate = new Date(now);
+        startDate = new Date(now); startDate.setMonth(now.getMonth() - 3);
+        prevEnd = new Date(startDate); prevEnd.setDate(startDate.getDate() - 1);
+        prevStart = new Date(prevEnd); prevStart.setMonth(prevEnd.getMonth() - 3);
+        break;
+      case '6mois':
+        endDate = new Date(now);
+        startDate = new Date(now); startDate.setMonth(now.getMonth() - 6);
+        prevEnd = new Date(startDate); prevEnd.setDate(startDate.getDate() - 1);
+        prevStart = new Date(prevEnd); prevStart.setMonth(prevEnd.getMonth() - 6);
+        break;
+      case '1an':
+        endDate = new Date(now);
+        startDate = new Date(now); startDate.setFullYear(now.getFullYear() - 1);
+        prevEnd = new Date(startDate); prevEnd.setDate(startDate.getDate() - 1);
+        prevStart = new Date(prevEnd); prevStart.setFullYear(prevEnd.getFullYear() - 1);
+        break;
+      default:
+        break;
+    }
+    return { prevStart, prevEnd };
+  }
+
+  // Ajout : calcul de la période courante pour analytics
+  function getCurrentPeriodDatesAnalytics(period: string) {
+    const now = new Date();
+    let endDate = new Date(now);
+    let startDate = new Date(now);
+    switch (period) {
+      case '7jours':
+        startDate = new Date(now); startDate.setDate(now.getDate() - 7);
+        break;
+      case '30jours':
+        startDate = new Date(now); startDate.setDate(now.getDate() - 30);
+        break;
+      case '3mois':
+        startDate = new Date(now); startDate.setMonth(now.getMonth() - 3);
+        break;
+      case '6mois':
+        startDate = new Date(now); startDate.setMonth(now.getMonth() - 6);
+        break;
+      case '1an':
+        startDate = new Date(now); startDate.setFullYear(now.getFullYear() - 1);
+        break;
+      default:
+        break;
+    }
+    return { startDate, endDate };
+  }
+  const { startDate, endDate } = getCurrentPeriodDatesAnalytics(periode);
+  const { prevStart, prevEnd } = getPreviousPeriodDatesAnalytics(periode);
+  const ventesFiltrees = categorie === "Toutes" ? ventes : ventes.filter(v => v.categorie === categorie);
+  const ventesPeriode = ventesFiltrees.filter(v => {
+    const venteDate = new Date(v.date.split('/').reverse().join('-'));
+    return venteDate >= startDate && venteDate <= endDate;
+  });
+  const previousVentes = ventesFiltrees.filter(v => {
+    const venteDate = new Date(v.date.split('/').reverse().join('-'));
+    return venteDate >= prevStart && venteDate <= prevEnd;
+  });
+  function getTendance(current: number, previous: number) {
+    if (previous === 0) return current === 0 ? 0 : 100;
+    return ((current - previous) / previous) * 100;
+  }
+  const evolutionVentes = getTendance(ventesPeriode.length, previousVentes.length);
+  const evolutionCA = getTendance(ventesPeriode.reduce((sum, v) => sum + v.prix, 0), previousVentes.reduce((sum, v) => sum + v.prix, 0));
+  const evolutionMarge = getTendance(ventesPeriode.reduce((sum, v) => sum + v.marge, 0), previousVentes.reduce((sum, v) => sum + v.marge, 0));
+  const evolutionPanier = getTendance(
+    ventesPeriode.length > 0 ? ventesPeriode.reduce((sum, v) => sum + v.prix, 0) / ventesPeriode.length : 0,
+    previousVentes.length > 0 ? previousVentes.reduce((sum, v) => sum + v.prix, 0) / previousVentes.length : 0
+  );
 
   return (
     <AnimatePresence mode="wait">
@@ -252,7 +366,7 @@ export default function AnalyticsPage() {
             subtitle="Cette période"
             icon={<ShoppingCart className="w-6 h-6" />}
             color="blue"
-            evolution="+12.5%"
+            evolution={`${evolutionVentes >= 0 ? '+' : ''}${evolutionVentes.toFixed(1)}%`}
           />
           <StatCard
             title="Chiffre d'affaires"
@@ -260,7 +374,7 @@ export default function AnalyticsPage() {
             subtitle="CA total"
             icon={<DollarSign className="w-6 h-6" />}
             color="green"
-            evolution="+8.2%"
+            evolution={`${evolutionCA >= 0 ? '+' : ''}${evolutionCA.toFixed(1)}%`}
           />
           <StatCard
             title="Marge totale"
@@ -268,7 +382,7 @@ export default function AnalyticsPage() {
             subtitle="Bénéfices"
             icon={<TrendingUp className="w-6 h-6" />}
             color="purple"
-            evolution="+15.3%"
+            evolution={`${evolutionMarge >= 0 ? '+' : ''}${evolutionMarge.toFixed(1)}%`}
           />
           <StatCard
             title="Panier moyen"
@@ -276,7 +390,7 @@ export default function AnalyticsPage() {
             subtitle="Par vente"
             icon={<Users className="w-6 h-6" />}
             color="orange"
-            evolution="+5.7%"
+            evolution={`${evolutionPanier >= 0 ? '+' : ''}${evolutionPanier.toFixed(1)}%`}
           />
         </motion.div>
 
@@ -298,7 +412,7 @@ export default function AnalyticsPage() {
                 <p className="text-slate-500 text-sm group-hover:text-slate-600 transition-colors duration-200">Ventes par mois</p>
               </div>
             </div>
-            <SalesChart />
+            <SalesChart data={ventesParMois} />
           </div>
 
           {/* Graphique des revenus */}
@@ -312,7 +426,7 @@ export default function AnalyticsPage() {
                 <p className="text-slate-500 text-sm group-hover:text-slate-600 transition-colors duration-200">Revenus par mois</p>
               </div>
             </div>
-            <RevenueChart />
+            <RevenueChart data={ventesParMois} />
           </div>
         </motion.div>
 

@@ -103,12 +103,6 @@ export function ImportVintedSmartButton({ onImport }: { onImport: (articles: Art
         <Upload className="w-5 h-5 mr-2" /> Importer Vinted
       </Button>
 
-      {/* Bandeau d'information moderne */}
-      <div className="mb-4 p-4 rounded-xl bg-gradient-to-r from-indigo-100 to-purple-100 border border-indigo-200 flex items-center gap-3 shadow-sm">
-        <Upload className="w-6 h-6 text-indigo-500" />
-        <span className="text-indigo-800 font-semibold">Prévisualisez, modifiez ou supprimez vos articles avant de valider l'import dans l'application.</span>
-      </div>
-
       {/* 3. Modal moderne (avec drag & drop, instructions, preview, édition inline) */}
       {modalOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm">
@@ -167,51 +161,6 @@ export function ImportVintedSmartButton({ onImport }: { onImport: (articles: Art
           </div>
         </div>
       )}
-
-      {/* Tableau moderne de prévisualisation */}
-      <div className="overflow-x-auto rounded-2xl shadow-lg border border-slate-200 bg-white/90">
-        <table className="min-w-full divide-y divide-slate-200">
-          <thead className="bg-gradient-to-r from-indigo-50 to-purple-50 sticky top-0 z-10">
-            <tr>
-              <th className="px-4 py-3 text-left text-xs font-bold text-slate-700 uppercase tracking-wider">Nom</th>
-              <th className="px-4 py-3 text-left text-xs font-bold text-slate-700 uppercase tracking-wider">Acheteur</th>
-              <th className="px-4 py-3 text-left text-xs font-bold text-slate-700 uppercase tracking-wider">Prix (€)</th>
-              <th className="px-4 py-3 text-left text-xs font-bold text-slate-700 uppercase tracking-wider">Date</th>
-              <th className="px-4 py-3 text-center text-xs font-bold text-slate-700 uppercase tracking-wider">Actions</th>
-            </tr>
-          </thead>
-          <tbody className="divide-y divide-slate-100">
-            {preview && preview.length === 0 && (
-              <tr>
-                <td colSpan={5} className="text-center text-slate-400 py-8">Aucun article à prévisualiser</td>
-              </tr>
-            )}
-            {preview && preview.map((article, idx) => (
-              <tr key={idx} className={idx % 2 === 0 ? "bg-white" : "bg-slate-50 hover:bg-indigo-50 transition-all duration-150"}>
-                <td className="px-4 py-3 font-medium text-slate-800 max-w-xs truncate">{article.nom}</td>
-                <td className="px-4 py-3 text-slate-700">{article.acheteur || <span className="italic text-slate-400">-</span>}</td>
-                <td className="px-4 py-3 text-indigo-700 font-bold">{article.prix}</td>
-                <td className="px-4 py-3 text-slate-600">{article.date}</td>
-                <td className="px-4 py-3 flex gap-2 justify-center items-center">
-                  <button className="p-2 rounded-lg hover:bg-indigo-100 transition" title="Éditer" onClick={() => handleEdit(idx, 'nom', article.nom)}><Edit2 className="w-4 h-4 text-indigo-500" /></button>
-                  <button className="p-2 rounded-lg hover:bg-red-100 transition" title="Supprimer" onClick={() => handleDelete(idx)}><Trash2 className="w-4 h-4 text-red-500" /></button>
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      </div>
-
-      {/* Bouton de validation moderne */}
-      <div className="flex justify-end mt-6">
-        <Button
-          className="bg-gradient-to-r from-indigo-500 to-purple-500 text-white font-bold px-6 py-3 rounded-xl shadow-lg hover:from-indigo-600 hover:to-purple-600 transition-all duration-200 hover:scale-105"
-          onClick={handleValidate}
-          disabled={!preview || preview.length === 0}
-        >
-          <Check className="w-5 h-5 mr-2" /> Valider l'import
-        </Button>
-      </div>
     </div>
   );
 }

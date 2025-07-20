@@ -35,7 +35,6 @@ import { AIAssistant } from "@/components/AIAssistant";
 import { useRouter } from "next/navigation";
 import { useData } from "@/contexts/DataContext";
 import { useAuth } from "@/contexts/AuthContext";
-import { ImportVintedButton } from "./import/ImportVintedButton";
 import { 
   Notification, 
   NotificationFilter, 
@@ -375,16 +374,6 @@ export function Header({
               aria-label="Ajouter un article"
             >
               <Plus className="w-4 h-4" />
-            </Button>
-            
-            <Button
-              variant="ghost"
-              size="icon"
-              className="h-10 w-10 rounded-xl hover:bg-orange-50 hover:text-orange-600 transition-all duration-300 hover:scale-110 hover:shadow-lg"
-              asChild
-              aria-label="Importer des données Vinted"
-            >
-              <ImportVintedButton />
             </Button>
             
             <Button

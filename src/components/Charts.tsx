@@ -3,17 +3,7 @@
 import React from 'react'
 import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, BarChart, Bar } from 'recharts'
 
-const data = [
-  { name: 'Jan', ventes: 4000, revenus: 2400 },
-  { name: 'Fév', ventes: 3000, revenus: 1398 },
-  { name: 'Mar', ventes: 2000, revenus: 9800 },
-  { name: 'Avr', ventes: 2780, revenus: 3908 },
-  { name: 'Mai', ventes: 1890, revenus: 4800 },
-  { name: 'Juin', ventes: 2390, revenus: 3800 },
-  { name: 'Juil', ventes: 3490, revenus: 4300 },
-]
-
-export function SalesChart() {
+export function SalesChart({ data }: { data: any[] }) {
   return (
     <ResponsiveContainer width="100%" height={300}>
       <AreaChart data={data}>
@@ -28,7 +18,7 @@ export function SalesChart() {
   )
 }
 
-export function RevenueChart() {
+export function RevenueChart({ data }: { data: any[] }) {
   return (
     <ResponsiveContainer width="100%" height={300}>
       <BarChart data={data}>

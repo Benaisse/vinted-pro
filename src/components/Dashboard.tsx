@@ -22,29 +22,7 @@ interface PeriodFilter {
   endDate: Date;
 }
 
-// Données financières complètes (mock)
-const allFinancialData = [
-  { month: "Jan", ca: 2000, revenus: 1500, marge: 400, date: "2024-01-01" },
-  { month: "Fév", ca: 4000, revenus: 3000, marge: 800, date: "2024-02-01" },
-  { month: "Mar", ca: 4500, revenus: 3200, marge: 900, date: "2024-03-01" },
-  { month: "Avr", ca: 2500, revenus: 2000, marge: 600, date: "2024-04-01" },
-  { month: "Mai", ca: 7000, revenus: 5000, marge: 1200, date: "2024-05-01" },
-  { month: "Juin", ca: 5000, revenus: 4000, marge: 900, date: "2024-06-01" },
-  { month: "Juil", ca: 6000, revenus: 4500, marge: 1100, date: "2024-07-01" },
-  { month: "Août", ca: 3500, revenus: 2800, marge: 700, date: "2024-08-01" },
-  { month: "Sep", ca: 5500, revenus: 4200, marge: 1000, date: "2024-09-01" },
-  { month: "Oct", ca: 4800, revenus: 3600, marge: 850, date: "2024-10-01" },
-  { month: "Nov", ca: 5200, revenus: 3900, marge: 950, date: "2024-11-01" },
-  { month: "Déc", ca: 6500, revenus: 4800, marge: 1300, date: "2024-12-01" },
-];
-
-const topSalesData = [
-  { name: "Robe Zara fleurie", ventes: 320 },
-  { name: "Sneakers Nike Air Max", ventes: 540 },
-  { name: "Sac Longchamp", ventes: 300 },
-  { name: "Jean Levi's 501", ventes: 180 },
-  { name: "Montre Daniel Wellington", ventes: 350 },
-];
+// SUPPRIMER allFinancialData, topSalesData, et toute variable mock
 
 const COLORS = ["#a78bfa", "#60a5fa", "#34d399", "#fbbf24", "#a3a3a3"];
 
@@ -141,18 +119,102 @@ export function Dashboard() {
   };
 
   // Simuler les données de la période précédente pour les tendances
-  const previousPeriodData = allFinancialData.slice(0, Math.max(0, filteredVentes.length - 1));
-  const previousCA = previousPeriodData.reduce((sum, d) => sum + d.ca, 0);
-  const previousRevenus = previousPeriodData.reduce((sum, d) => sum + d.revenus, 0);
-  const previousMarge = previousPeriodData.reduce((sum, d) => sum + d.marge, 0);
+  // Pour les graphiques, construire les datasets à partir de ventes (du contexte)
+  // Par exemple, pour le graphique d'évolution financière :
+  //
+  // const chartData = ventes.reduce((acc, v) => {
+  //   const month = v.date.split('/')[1] + '/' + v.date.split('/')[2];
+  //   let entry = acc.find(e => e.month === month);
+  //   if (!entry) {
+  //     entry = { month, ca: 0, revenus: 0, marge: 0 };
+  //     acc.push(entry);
+  //   }
+  //   entry.ca += v.prix;
+  //   entry.revenus += v.prix - v.cout;
+  //   entry.marge += v.marge;
+  //   return acc;
+  // }, [] as { month: string, ca: number, revenus: number, marge: number }[]);
+  //
+  // Utiliser chartData dans les AreaChart/BarChart à la place des données mock.
+  //
+  // Pour le top ventes, faire un groupBy sur article et trier par nombre de ventes.
+  //
+  // Pour la marge moyenne, calculer à partir de ventes filtrées.
+  //
+  // Supprimer toute référence à allFinancialData, topSalesData, etc.
+  // Calcul dynamique de la période précédente
+  function getPreviousPeriodDates(period: PeriodType, custom: { startDate: string, endDate: string }) {
+    const now = new Date();
+    let endDate = new Date(now);
+    let startDate = new Date(now);
+    let prevEnd = new Date(now);
+    let prevStart = new Date(now);
+    switch (period) {
+      case '7j':
+        endDate = new Date(now);
+        startDate = new Date(now); startDate.setDate(now.getDate() - 7);
+        prevEnd = new Date(startDate); prevEnd.setDate(startDate.getDate() - 1);
+        prevStart = new Date(prevEnd); prevStart.setDate(prevEnd.getDate() - 7);
+        break;
+      case '30j':
+        endDate = new Date(now);
+        startDate = new Date(now); startDate.setDate(now.getDate() - 30);
+        prevEnd = new Date(startDate); prevEnd.setDate(startDate.getDate() - 1);
+        prevStart = new Date(prevEnd); prevStart.setDate(prevEnd.getDate() - 30);
+        break;
+      case '3m':
+        endDate = new Date(now);
+        startDate = new Date(now); startDate.setMonth(now.getMonth() - 3);
+        prevEnd = new Date(startDate); prevEnd.setDate(startDate.getDate() - 1);
+        prevStart = new Date(prevEnd); prevStart.setMonth(prevEnd.getMonth() - 3);
+        break;
+      case '1a':
+        endDate = new Date(now);
+        startDate = new Date(now); startDate.setFullYear(now.getFullYear() - 1);
+        prevEnd = new Date(startDate); prevEnd.setDate(startDate.getDate() - 1);
+        prevStart = new Date(prevEnd); prevStart.setFullYear(prevEnd.getFullYear() - 1);
+        break;
+      case 'custom':
+        if (custom.startDate && custom.endDate) {
+          startDate = new Date(custom.startDate);
+          endDate = new Date(custom.endDate);
+          const diff = endDate.getTime() - startDate.getTime();
+          prevEnd = new Date(startDate); prevEnd.setDate(startDate.getDate() - 1);
+          prevStart = new Date(prevEnd.getTime() - diff);
+        }
+        break;
+    }
+    return { prevStart, prevEnd };
+  }
 
+  const { prevStart, prevEnd } = getPreviousPeriodDates(selectedPeriod, customDateRange);
+  const previousVentes = ventes.filter(v => {
+    const venteDate = new Date(v.date.split('/').reverse().join('-'));
+    return venteDate >= prevStart && venteDate <= prevEnd;
+  });
+  const previousCA = previousVentes.reduce((sum, v) => sum + v.prix, 0);
+  const previousRevenus = previousVentes.reduce((sum, v) => sum + (v.prix - v.cout), 0);
+  const previousMarge = previousVentes.reduce((sum, v) => sum + v.marge, 0);
+  const previousVentesCount = previousVentes.length;
+
+  // Calcul dynamique des tendances
   const tendanceCA = getTendance(totalCA, previousCA);
   const tendanceRevenu = getTendance(totalRevenus, previousRevenus);
-  const tendanceVentes = -3.1; // Mock
+  const tendanceVentes = getTendance(filteredVentes.length, previousVentesCount);
   const tendanceMarge = getTendance(totalRevenuNet, previousMarge);
 
+  // Calcul du top ventes dynamique
+  const ventesParArticle = filteredVentes.reduce((acc, v) => {
+    acc[v.article] = (acc[v.article] || 0) + 1;
+    return acc;
+  }, {} as Record<string, number>);
+  const topVentesDynamiques = Object.entries(ventesParArticle)
+    .map(([name, ventes]) => ({ name, ventes }))
+    .sort((a, b) => b.ventes - a.ventes)
+    .slice(0, 5);
+  const topVente = topVentesDynamiques[0] || { name: '-', ventes: 0 };
+
   // Résumé rapide (mock)
-  const topVente = topSalesData[0];
   const stockCritique = stats.stockFaible + stats.stockRupture;
 
   // Handler pour changer de période
@@ -205,6 +267,26 @@ export function Dashboard() {
   function handleSubmitNouvelleVente(article: Article) {
     console.log('Nouvelle vente ajoutée :', article);
   }
+
+  // Dataset dynamique pour le graphique d'évolution financière (groupé par mois)
+  const chartData = filteredVentes.reduce((acc, v) => {
+    // On suppose date au format DD/MM/YYYY
+    const [day, month, year] = v.date.split('/');
+    const key = `${month}/${year}`;
+    let entry = acc.find(e => e.month === key);
+    if (!entry) {
+      entry = { month: key, ca: 0, revenus: 0, marge: 0 };
+      acc.push(entry);
+    }
+    entry.ca += v.prix;
+    entry.revenus += v.prix - v.cout;
+    entry.marge += v.marge;
+    return acc;
+  }, [] as { month: string, ca: number, revenus: number, marge: number }[]);
+
+  // Calcul dynamique de la tendance de la marge moyenne
+  const margeMoyennePrecedente = previousVentes.length > 0 ? (previousVentes.reduce((sum, v) => sum + v.margePourcent, 0) / previousVentes.length) : 0;
+  const tendanceMargeMoyenne = getTendance(margeMoyenne, margeMoyennePrecedente);
 
   return (
     <AnimatePresence mode="wait">
@@ -429,11 +511,11 @@ export function Dashboard() {
           />
           <StatCard
             title="Marge moyenne"
-            value="78.5%"
+            value={margeMoyenne ? `${margeMoyenne.toFixed(1)}%` : "-"}
             subtitle="Par vente"
             icon={<Users className="w-6 h-6" />}
             color="orange"
-            trend={`${tendanceMarge >= 0 ? '+' : ''}${tendanceMarge.toFixed(1)}%`}
+            trend={`${tendanceMargeMoyenne >= 0 ? '+' : ''}${tendanceMargeMoyenne.toFixed(1)}%`}
           />
         </motion.div>
 
@@ -458,7 +540,7 @@ export function Dashboard() {
             </div>
             <div className="h-80 w-full">
               <ResponsiveContainer width="100%" height="100%">
-                <AreaChart data={filteredVentes} margin={{ top: 20, right: 30, left: 0, bottom: 0 }}>
+                <AreaChart data={chartData} margin={{ top: 20, right: 30, left: 0, bottom: 0 }}>
                   <defs>
                     <linearGradient id="colorCA" x1="0" y1="0" x2="0" y2="1">
                       <stop offset="5%" stopColor="#6366f1" stopOpacity={0.7}/>
@@ -499,13 +581,13 @@ export function Dashboard() {
             </div>
             <div className="h-56 w-full mb-6">
               <ResponsiveContainer width="100%" height="100%">
-                <BarChart data={topSalesData} margin={{ top: 20, right: 30, left: 0, bottom: 0 }} barCategoryGap={30}>
+                <BarChart data={topVentesDynamiques} margin={{ top: 20, right: 30, left: 0, bottom: 0 }} barCategoryGap={30}>
                   <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#e5e7eb" />
                   <XAxis dataKey="name" angle={-28} textAnchor="end" interval={0} height={70} tick={{ fontSize: 13, fill: '#6b7280' }} axisLine={false} tickLine={false} />
                   <YAxis tick={{ fontSize: 13, fill: '#6b7280' }} axisLine={false} tickLine={false} />
                   <Tooltip content={<CustomTooltip />} />
                   <Bar dataKey="ventes" radius={[8, 8, 0, 0]}>
-                    {topSalesData.map((entry, index) => (
+                    {topVentesDynamiques.map((entry, index) => (
                       <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
                     ))}
                   </Bar>
@@ -513,11 +595,20 @@ export function Dashboard() {
               </ResponsiveContainer>
             </div>
             <div className="space-y-3">
-              <TopSale index={1} name="Robe Zara fleurie" category="Vêtements" value="300€" sales={12} />
-              <TopSale index={2} name="Sneakers Nike Air Max" category="Chaussures" value="520€" sales={8} />
-              <TopSale index={3} name="Sac Longchamp" category="Sacs" value="270€" sales={6} />
-              <TopSale index={4} name="Jean Levi's 501" category="Vêtements" value="175€" sales={5} />
-              <TopSale index={5} name="Montre Daniel Wellington" category="Accessoires" value="320€" sales={4} />
+              {topVentesDynamiques.map((vente, idx) => {
+                // Chercher la catégorie et le prix de l'article dans filteredVentes
+                const venteInfos = filteredVentes.find(v => v.article === vente.name);
+                return (
+                  <TopSale
+                    key={vente.name}
+                    index={idx + 1}
+                    name={vente.name}
+                    category={venteInfos?.categorie || "-"}
+                    value={venteInfos ? `${venteInfos.prix}€` : "-"}
+                    sales={vente.ventes}
+                  />
+                );
+              })}
             </div>
           </div>
         </motion.div>
