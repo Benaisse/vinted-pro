@@ -12,6 +12,8 @@ export default function ProfilPage() {
   console.log("TEST_VAR:", process.env.NEXT_PUBLIC_TEST_VAR);
   const { user, signOut, loading } = useAuth();
   const router = useRouter();
+  // DEBUG: Afficher l'état user/loading
+  console.log("ProfilPage user:", user, "loading:", loading);
   const [editGeneral, setEditGeneral] = useState(false);
   const [saving, setSaving] = useState(false);
   const [name, setName] = useState(user?.user_metadata?.full_name || user?.user_metadata?.name || "");
@@ -113,7 +115,7 @@ export default function ProfilPage() {
   if (loading) {
     return <div className="flex min-h-screen items-center justify-center">Chargement...</div>;
   }
-  if (!user) return null;
+  if (!user) return <div className="text-red-600 text-center mt-10">Utilisateur non authentifié ou session expirée.<br/>Vérifiez votre connexion ou contactez le support.</div>;
 
   const email = user?.email || '';
   const inscription = user.created_at ? new Date(user.created_at).toLocaleString() : "-";
