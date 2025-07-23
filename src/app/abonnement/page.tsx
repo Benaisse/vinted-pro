@@ -6,6 +6,105 @@ import { Button } from "@/components/ui/button";
 import { useAuth } from "@/contexts/AuthContext";
 import { useEffect, useState } from "react";
 import { supabase } from "@/lib/supabaseClient";
+import { loadStripe } from '@stripe/stripe-js';
+import { Elements, CardElement, useStripe, useElements } from '@stripe/react-stripe-js';
+
+const stripePromise = loadStripe(process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY!);
+
+function AbonnementForm() {
+  const [plan, setPlan] = useState<'mensuel' | 'annuel'>('mensuel');
+  const [email, setEmail] = useState('');
+  const [clientSecret, setClientSecret] = useState<string | null>(null);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState('');
+  const [success, setSuccess] = useState('');
+  const stripe = useStripe();
+  const elements = useElements();
+
+  const prix = plan === 'mensuel' ? 19.99 : 199.99;
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setError('');
+    setSuccess('');
+    setLoading(true);
+    try {
+      // 1. Créer la souscription côté serveur
+      const res = await fetch('/api/stripe/create-subscription', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email, plan }),
+      });
+      const data = await res.json();
+      if (!data.clientSecret) throw new Error(data.error || 'Erreur Stripe');
+      setClientSecret(data.clientSecret);
+    } catch (err: any) {
+      setError(err.message || 'Erreur lors de la création de la souscription');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handlePayment = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!stripe || !elements || !clientSecret) return;
+    setLoading(true);
+    setError('');
+    setSuccess('');
+    const cardElement = elements.getElement(CardElement);
+    if (!cardElement) return;
+    const { error, paymentIntent } = await stripe.confirmCardPayment(clientSecret, {
+      payment_method: { card: cardElement, billing_details: { email } },
+    });
+    if (error) {
+      setError(error.message || 'Erreur de paiement');
+    } else if (paymentIntent && paymentIntent.status === 'succeeded') {
+      // Appeler une API pour activer l'abonnement côté base de données
+      try {
+        await fetch('/api/stripe/activate-subscription', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ email, plan }),
+        });
+        setSuccess('Paiement réussi ! Abonnement activé.');
+      } catch (err: any) {
+        setSuccess('Paiement réussi, mais erreur lors de l’activation de l’abonnement.');
+      }
+    }
+    setLoading(false);
+  };
+
+  return (
+    <div className="max-w-md mx-auto bg-white rounded-xl shadow-lg p-8 mt-8">
+      <h2 className="text-2xl font-bold mb-4">Choisissez votre abonnement</h2>
+      <form onSubmit={clientSecret ? handlePayment : handleSubmit} className="space-y-4">
+        <div>
+          <label className="block mb-1 font-medium">Email</label>
+          <input type="email" value={email} onChange={e => setEmail(e.target.value)} required className="w-full border rounded px-3 py-2" />
+        </div>
+        <div>
+          <label className="block mb-1 font-medium">Plan</label>
+          <select value={plan} onChange={e => setPlan(e.target.value as 'mensuel' | 'annuel')} className="w-full border rounded px-3 py-2">
+            <option value="mensuel">Mensuel - 19,99€/mois</option>
+            <option value="annuel">Annuel - 199,99€/an</option>
+          </select>
+        </div>
+        <div className="text-lg font-semibold mb-2">Prix : {prix.toLocaleString('fr-FR', { style: 'currency', currency: 'EUR' })}</div>
+        {clientSecret && (
+          <div>
+            <label className="block mb-1 font-medium">Carte bancaire</label>
+            <CardElement options={{ hidePostalCode: true }} className="border rounded px-3 py-2" />
+          </div>
+        )}
+        {error && <div className="text-red-600">{error}</div>}
+        {success && <div className="text-green-600">{success}</div>}
+        <button type="submit" disabled={loading} className="w-full bg-indigo-600 text-white py-2 rounded font-semibold hover:bg-indigo-700 transition">
+          {loading ? 'Traitement...' : clientSecret ? 'Payer' : 'Continuer'}
+        </button>
+      </form>
+    </div>
+  );
+}
 
 export default function AbonnementPage() {
   const { user } = useAuth();
@@ -13,6 +112,9 @@ export default function AbonnementPage() {
   const [loading, setLoading] = useState(true);
   const [success, setSuccess] = useState("");
   const [error, setError] = useState("");
+  const [modalOpen, setModalOpen] = useState(false);
+  const [plan, setPlan] = useState<'mensuel' | 'annuel'>('mensuel');
+  const [email, setEmail] = useState('');
 
   useEffect(() => {
     async function fetchSubscription() {
@@ -225,13 +327,51 @@ export default function AbonnementPage() {
               </div>
               
               <Button 
-                className="w-full bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 text-white shadow-lg hover:shadow-xl transition-all duration-200 hover:scale-105"
-                onClick={handleUpgradeToPremium}
+                className="w-full bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 text-white shadow-lg hover:shadow-xl transition-all duration-200 hover:scale-105 mb-2"
+                onClick={async () => {
+                  if (!user?.email) return;
+                  const res = await fetch('/api/stripe/create-subscription', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ email: user.email, plan: plan }),
+                  });
+                  const data = await res.json();
+                  if (data.url) {
+                    window.location.href = data.url;
+                  } else {
+                    setError(data.error || 'Erreur lors de la création de la souscription');
+                  }
+                }}
                 disabled={subscription?.plan === 'premium'}
               >
                 {subscription?.plan === 'premium' ? 'Déjà Premium' : 'Passer à Premium'}
                 <ArrowRight className="w-4 h-4 ml-2 group-hover:translate-x-1 transition-transform duration-200" />
               </Button>
+
+              {/* Bouton Annuler l'abonnement */}
+              {subscription?.plan === 'premium' && subscription?.status !== 'cancelled' && (
+                <Button
+                  variant="outline"
+                  className="w-full border-red-500 text-red-600 hover:bg-red-50 hover:border-red-600 mt-2"
+                  onClick={async () => {
+                    if (!user?.email) return;
+                    const res = await fetch('/api/stripe/cancel-subscription', {
+                      method: 'POST',
+                      headers: { 'Content-Type': 'application/json' },
+                      body: JSON.stringify({ email: user.email }),
+                    });
+                    const data = await res.json();
+                    if (data.success) {
+                      setSuccess('Votre abonnement sera annulé à la fin de la période en cours.');
+                      setSubscription({ ...subscription, status: 'cancelled' });
+                    } else {
+                      setError(data.error || 'Erreur lors de l’annulation de l’abonnement');
+                    }
+                  }}
+                >
+                  Annuler l’abonnement
+                </Button>
+              )}
             </div>
           </motion.div>
 

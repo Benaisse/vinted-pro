@@ -1,5 +1,5 @@
 "use client";
-import { ThemeProvider } from "@/contexts/ThemeContext";
+import { ThemeProvider } from "next-themes";
 import { DataProvider } from "@/contexts/DataContext";
 import { StatsProvider } from "@/contexts/StatsContext";
 

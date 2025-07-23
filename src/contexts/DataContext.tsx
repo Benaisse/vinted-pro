@@ -31,7 +31,7 @@ interface StockItem {
   derniereMiseAJour: string;
 }
 
-interface DataContextType {
+export interface DataContextType {
   // Inventaire
   articles: Article[];
   addArticle: (article: Article) => void;

@@ -47,7 +47,7 @@ export default function ProfilPage() {
     async function fetchStatsAndReviewsAndAddressAndSubscription() {
       setLoadingStats(true);
       try {
-        if (user) {
+        if (user && supabase) {
           // Stats
           const { data: statsData } = await supabase
             .from('user_stats')
@@ -95,6 +95,7 @@ export default function ProfilPage() {
   useEffect(() => {
     async function testSupabase() {
       try {
+        if (!supabase) throw new Error('Supabase non initialisé');
         const { data, error } = await supabase.from("ventes").select("*").limit(1);
         if (error) {
           console.error("❌ Supabase error:", error.message);
@@ -136,24 +137,26 @@ export default function ProfilPage() {
     setSuccess("");
     let avatarUrl = avatar;
     try {
-      // Upload avatar si modifié
-      if (avatarFile) {
+      if (avatarFile && supabase && user) {
+        // Upload avatar si modifié
         const { data, error: uploadError } = await supabase.storage.from('avatars').upload(`public/${user.id}_${Date.now()}`, avatarFile, { upsert: true });
         if (uploadError) throw uploadError;
-        const { data: urlData } = supabase.storage.from('avatars').getPublicUrl(data.path);
-        avatarUrl = urlData.publicUrl;
+        if (data) {
+          const { data: urlData } = supabase.storage.from('avatars').getPublicUrl(data.path);
+          avatarUrl = urlData?.publicUrl || avatarUrl;
+        }
       }
-      // Update user metadata
-      const { error: updateError } = await supabase.auth.updateUser({
-        data: { full_name: name, avatar_url: avatarUrl, bio }
-      });
-      if (updateError) throw updateError;
-      setEditGeneral(false);
-      setAvatarFile(null);
-      setSuccess("Profil mis à jour avec succès !");
-      setTimeout(() => setSuccess("") , 2500);
-    } catch (err: any) {
-      setError(err.message || "Erreur lors de la sauvegarde");
+      if (supabase && user) {
+        // Mettre à jour le profil utilisateur
+        const { error: updateError } = await supabase.auth.updateUser({
+          data: { full_name: name, avatar_url: avatarUrl, bio }
+        });
+        if (updateError) throw updateError;
+        setSuccess("Profil mis à jour !");
+        setEditGeneral(false);
+      }
+    } catch (e: any) {
+      setError(e.message || "Erreur lors de la sauvegarde");
     } finally {
       setSaving(false);
     }
@@ -172,6 +175,7 @@ export default function ProfilPage() {
 
   // Gestion du changement de mot de passe
   const handleChangePassword = async () => {
+    setChangingPassword(true);
     setPasswordError("");
     setPasswordSuccess("");
     if (!newPassword || newPassword.length < 6) {
@@ -182,15 +186,15 @@ export default function ProfilPage() {
       setPasswordError("Les mots de passe ne correspondent pas.");
       return;
     }
-    setChangingPassword(true);
     try {
-      const { error } = await supabase.auth.updateUser({ password: newPassword });
-      if (error) throw error;
-      setPasswordSuccess("Mot de passe changé avec succès !");
-      setCurrentPassword("");
-      setNewPassword("");
-      setConfirmPassword("");
-      setTimeout(() => setPasswordSuccess("") , 2500);
+      if (supabase) {
+        const { error } = await supabase.auth.updateUser({ password: newPassword });
+        if (error) throw error;
+        setPasswordSuccess("Mot de passe modifié avec succès !");
+        setCurrentPassword("");
+        setNewPassword("");
+        setConfirmPassword("");
+      }
     } catch (err: any) {
       setPasswordError(err.message || "Erreur lors du changement de mot de passe");
     } finally {
@@ -200,25 +204,24 @@ export default function ProfilPage() {
 
   // Gestion des préférences de notifications
   const handleSaveNotifications = async () => {
+    setSavingNotifications(true);
     setNotifError("");
     setNotifSuccess("");
-    setSavingNotifications(true);
     try {
-      if (user) {
+      if (supabase) {
         const { error } = await supabase.auth.updateUser({ data: { notifications } });
         if (error) throw error;
-        setNotifSuccess("Préférences enregistrées !");
-        setTimeout(() => setNotifSuccess("") , 2500);
+        setNotifSuccess("Notifications mises à jour !");
       }
-    } catch (err: any) {
-      setNotifError(err.message || "Erreur lors de la sauvegarde des préférences");
+    } catch (e: any) {
+      setNotifError(e.message || "Erreur lors de la sauvegarde des notifications");
     } finally {
       setSavingNotifications(false);
     }
   };
 
   const handleUpgradeToPremium = async () => {
-    if (!user) return;
+    if (!supabase || !user) return;
     try {
       const { error } = await supabase
         .from('user_subscriptions')
@@ -385,7 +388,7 @@ export default function ProfilPage() {
                     setError("");
                     setSuccess("");
                     try {
-                      if (user) {
+                      if (user && supabase) {
                         // On suppose une table 'user_addresses' avec user_id, street, city, postal, country
                         const { error: upsertError } = await supabase
                           .from('user_addresses')

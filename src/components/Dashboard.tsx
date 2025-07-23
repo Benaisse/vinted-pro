@@ -5,7 +5,7 @@ import { BarChart2, Calendar, ChevronDown, ArrowUpRight, ArrowDownRight, AlertTr
 import {
   AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, BarChart, Bar, Cell, Legend
 } from "recharts";
-import React from "react";
+import React, { useMemo } from "react";
 import { useData } from "@/contexts/DataContext";
 import { ventes as ventesData } from "@/data/ventes";
 import { ArticleFormModal, Article } from "@/components/ArticleFormModal";
@@ -101,16 +101,16 @@ export function Dashboard() {
 
   // Filtrer les ventes selon la période
   const { startDate, endDate } = getPeriodDates(selectedPeriod);
-  const filteredVentes = ventes.filter(v => {
+  const filteredVentes = useMemo(() => ventes.filter(v => {
     const venteDate = new Date(v.date.split('/').reverse().join('-'));
     return venteDate >= startDate && venteDate <= endDate;
-  });
+  }), [ventes, startDate, endDate]);
 
   // Calculer les métriques filtrées à partir des ventes réelles
-  const totalCA = filteredVentes.reduce((sum, v) => sum + v.prix, 0);
-  const totalRevenuNet = filteredVentes.reduce((sum, v) => sum + v.marge, 0);
-  const totalRevenus = filteredVentes.reduce((sum, v) => sum + (v.prix - v.cout), 0);
-  const margeMoyenne = filteredVentes.length > 0 ? (filteredVentes.reduce((sum, v) => sum + v.margePourcent, 0) / filteredVentes.length) : 0;
+  const totalCA = useMemo(() => filteredVentes.reduce((sum, v) => sum + v.prix, 0), [filteredVentes]);
+  const totalRevenuNet = useMemo(() => filteredVentes.reduce((sum, v) => sum + v.marge, 0), [filteredVentes]);
+  const totalRevenus = useMemo(() => filteredVentes.reduce((sum, v) => sum + (v.prix - v.cout), 0), [filteredVentes]);
+  const margeMoyenne = useMemo(() => filteredVentes.length > 0 ? (filteredVentes.reduce((sum, v) => sum + v.margePourcent, 0) / filteredVentes.length) : 0, [filteredVentes]);
 
   // Calculer les tendances (mock - basé sur la période précédente)
   const getTendance = (current: number, previous: number): number => {

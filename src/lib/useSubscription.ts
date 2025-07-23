@@ -15,7 +15,7 @@ export function useSubscription() {
     async function fetchSubscription() {
       setLoading(true);
       try {
-        if (user) {
+        if (user && supabase) {
           const { data: subData } = await supabase
             .from('user_subscriptions')
             .select('plan, status')
@@ -34,7 +34,7 @@ export function useSubscription() {
   }, [user]);
 
   const upgradeToPremium = async () => {
-    if (!user) return;
+    if (!user || !supabase) return;
     try {
       setLoading(true);
       const { error } = await supabase
