@@ -20,7 +20,15 @@ export async function POST(req: NextRequest) {
       customer = await stripe.customers.create({ email });
     }
 
-    // Création de la session Stripe Checkout
+    // Récupère l'utilisateur pour lier son id dans metadata
+    if (!supabase) throw new Error('Supabase non initialisé');
+    const { data: user } = await supabase
+      .from('users')
+      .select('id')
+      .eq('email', email)
+      .single();
+
+    // Création de la session Stripe Checkout avec metadata
     const session = await stripe.checkout.sessions.create({
       payment_method_types: ['card'],
       customer: customer.id,
@@ -30,15 +38,13 @@ export async function POST(req: NextRequest) {
       mode: 'subscription',
       success_url: `${process.env.NEXT_PUBLIC_BASE_URL}/abonnement/success`,
       cancel_url: `${process.env.NEXT_PUBLIC_BASE_URL}/abonnement/cancel`,
+      metadata: {
+        email,
+        userId: user?.id || ''
+      }
     });
 
     // Enregistrement dans Supabase (optionnel, peut être fait via webhook Stripe après paiement)
-    if (!supabase) throw new Error('Supabase non initialisé');
-    const { data: user } = await supabase
-      .from('users')
-      .select('id')
-      .eq('email', email)
-      .single();
     if (user) {
       await supabase
         .from('user_subscriptions')

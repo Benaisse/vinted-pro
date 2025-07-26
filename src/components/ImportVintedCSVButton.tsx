@@ -97,39 +97,49 @@ export function ImportVintedModal({ onImport }: { onImport: (articles: VintedArt
               )}
             </div>
             {preview && preview.length > 0 && (
-              <div className="overflow-x-auto max-h-96 mb-4">
-                <table className="min-w-full text-sm border rounded-xl shadow">
-                  <thead className="sticky top-0 bg-indigo-100">
-                    <tr>
-                      <th className="px-3 py-2">Nom</th>
-                      <th className="px-3 py-2">Acheteur</th>
-                      <th className="px-3 py-2">Prix (€)</th>
-                      <th className="px-3 py-2">Date</th>
-                      <th className="px-3 py-2">Actions</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {preview.map((article, idx) => (
-                      <tr key={idx} className="even:bg-slate-50 hover:bg-indigo-50 transition">
-                        <td className="px-3 py-2">
-                          <input value={article.nom} onChange={e => handleEdit(idx, 'nom', e.target.value)} className="w-full bg-transparent border-b border-indigo-200 focus:outline-none focus:border-indigo-500" />
-                        </td>
-                        <td className="px-3 py-2">
-                          <input value={article.acheteur || ''} onChange={e => handleEdit(idx, 'acheteur', e.target.value)} className="w-full bg-transparent border-b border-indigo-200 focus:outline-none focus:border-indigo-500" />
-                        </td>
-                        <td className="px-3 py-2">
-                          <input type="number" value={article.prix} onChange={e => handleEdit(idx, 'prix', e.target.value)} className="w-24 bg-transparent border-b border-indigo-200 focus:outline-none focus:border-indigo-500 text-right" />
-                        </td>
-                        <td className="px-3 py-2">
-                          <input value={article.date || ''} onChange={e => handleEdit(idx, 'date', e.target.value)} className="w-32 bg-transparent border-b border-indigo-200 focus:outline-none focus:border-indigo-500" />
-                        </td>
-                        <td className="px-3 py-2 text-center">
-                          <Button size="icon" variant="ghost" className="text-red-500" onClick={() => handleDelete(idx)}><Trash2 className="w-5 h-5" /></Button>
-                        </td>
+              <div className="mb-4">
+                <div className="flex items-center justify-between mb-3">
+                  <div className="flex items-center gap-2">
+                    <div className="bg-indigo-100 text-indigo-700 px-3 py-1 rounded-full text-sm font-semibold">
+                      {preview.length} article{preview.length > 1 ? 's' : ''} trouvé{preview.length > 1 ? 's' : ''}
+                    </div>
+                    <span className="text-slate-600 text-sm">Aperçu des données extraites</span>
+                  </div>
+                </div>
+                <div className="overflow-x-auto max-h-96 mb-4">
+                  <table className="min-w-full text-sm border rounded-xl shadow">
+                    <thead className="sticky top-0 bg-indigo-100">
+                      <tr>
+                        <th className="px-3 py-2">Nom</th>
+                        <th className="px-3 py-2">Acheteur</th>
+                        <th className="px-3 py-2">Prix (€)</th>
+                        <th className="px-3 py-2">Date</th>
+                        <th className="px-3 py-2">Actions</th>
                       </tr>
-                    ))}
-                  </tbody>
-                </table>
+                    </thead>
+                    <tbody>
+                      {preview.map((article, idx) => (
+                        <tr key={idx} className="even:bg-slate-50 hover:bg-indigo-50 transition">
+                          <td className="px-3 py-2">
+                            <input value={article.nom} onChange={e => handleEdit(idx, 'nom', e.target.value)} className="w-full bg-transparent border-b border-indigo-200 focus:outline-none focus:border-indigo-500" />
+                          </td>
+                          <td className="px-3 py-2">
+                            <input value={article.acheteur || ''} onChange={e => handleEdit(idx, 'acheteur', e.target.value)} className="w-full bg-transparent border-b border-indigo-200 focus:outline-none focus:border-indigo-500" />
+                          </td>
+                          <td className="px-3 py-2">
+                            <input type="number" value={article.prix} onChange={e => handleEdit(idx, 'prix', e.target.value)} className="w-24 bg-transparent border-b border-indigo-200 focus:outline-none focus:border-indigo-500 text-right" />
+                          </td>
+                          <td className="px-3 py-2">
+                            <input value={article.date || ''} onChange={e => handleEdit(idx, 'date', e.target.value)} className="w-32 bg-transparent border-b border-indigo-200 focus:outline-none focus:border-indigo-500" />
+                          </td>
+                          <td className="px-3 py-2 text-center">
+                            <Button size="icon" variant="ghost" className="text-red-500" onClick={() => handleDelete(idx)}><Trash2 className="w-5 h-5" /></Button>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
               </div>
             )}
             <div className="flex justify-end gap-2 mt-4">

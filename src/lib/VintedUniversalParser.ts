@@ -13,7 +13,8 @@ export class VintedUniversalParser {
   static parse(content: string, filename?: string): VintedArticle[] {
     const format = detectFileFormat(content, filename);
     switch (format) {
-      case 'html': return this.parseHTML(content);
+      case 'html': 
+        return this.parseHTML(content);
       case 'csv': return this.parseCSV(content);
       case 'txt': return this.parseTXT(content);
       case 'json': return this.parseJSON(content);
@@ -34,16 +35,21 @@ export class VintedUniversalParser {
   }
   // --- HTML ---
   private static parseHTML(content: string): VintedArticle[] {
-    // Extraction par blocs Commande
-    // On découpe sur 'Commande:' puis on traite chaque bloc
-    const blocks = content.split(/Commande:/).slice(1);
+    // Remplacer les <br>, <br/>, <br /> par des retours à la ligne
+    let cleanContent = content.replace(/<br\s*\/?>/gi, '\n');
+    // Supprimer toutes les autres balises HTML
+    cleanContent = cleanContent.replace(/<[^>]+>/g, '');
+    // Découper sur chaque bloc de commande
+    const blocks = cleanContent.split(/Commandé:/).slice(1);
     const articles: VintedArticle[] = [];
     for (const block of blocks) {
-      // Date de la commande (format: 2023-05-17 17:49:31 +0000 ou autre)
-      const dateMatch = block.match(/(\d{4}-\d{2}-\d{2}(?:[ T]\d{2}:\d{2}:\d{2})?)/);
+      // Date de la commande (juste après 'Commandé:')
+      const dateMatch = block.match(/\s*(\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2})/);
       const date = dateMatch ? dateMatch[1].split(' ')[0] : '';
-      // Section des articles (liste à puces ou lignes après 'Articles:')
-      // On prend tout ce qui suit 'Articles:' ou les lignes commençant par '•'
+      // Extraction du nom de l'acheteur
+      const acheteurMatch = block.match(/Acheteur\s*:\s*(.+)/i);
+      const acheteur = acheteurMatch ? acheteurMatch[1].trim() : '';
+      // Section des articles
       let articlesSection = '';
       if (block.includes('Articles:')) {
         articlesSection = block.split('Articles:')[1];
@@ -53,15 +59,24 @@ export class VintedUniversalParser {
         articlesSection = bulletLines.join('\n');
       }
       // On extrait chaque ligne d'article
-      const lines = articlesSection.split(/\n|<br\s*\/?>|•/).map(l => l.trim()).filter(l => l);
-      for (const line of lines) {
-        // Cherche un prix (ex: 24.99 EUR ou 5,00 EUR)
-        const prixMatch = line.match(/([0-9]+[\.,]?[0-9]*)\s*(EUR|€)/i);
-        const prix = prixMatch ? parseFloat(prixMatch[1].replace(',', '.')) : 0;
-        // Le nom est la partie avant le prix
-        const nom = prixMatch ? line.slice(0, prixMatch.index).replace(/[-:•]$/, '').trim() : line.trim();
-        if (nom && prix > 0) {
-          articles.push({ nom, prix, date });
+      const lines = articlesSection.split(/\n|•/).map(l => l.trim()).filter(l => l);
+      
+      // Traiter les lignes par paires (nom + prix)
+      for (let i = 0; i < lines.length; i += 2) {
+        const nomLine = lines[i];
+        const prixLine = lines[i + 1];
+        
+        if (nomLine && prixLine) {
+          // Cherche un prix dans la ligne de prix
+          const prixMatch = prixLine.match(/([0-9]+[\.,]?[0-9]*)\s*(EUR|€)/i);
+          const prix = prixMatch ? parseFloat(prixMatch[1].replace(',', '.')) : 0;
+          
+          // Le nom est la ligne de nom, nettoyé des caractères superflus
+          const nom = nomLine.replace(/[-:•]$/, '').trim();
+          
+          if (nom && prix > 0) {
+            articles.push({ nom, prix, date, acheteur });
+          }
         }
       }
     }
