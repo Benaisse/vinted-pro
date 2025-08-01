@@ -1,4 +1,8 @@
-import { supabase } from '@/lib/supabaseClient';
+import { createClient } from '@supabase/supabase-js';
+
+const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
+const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!;
+const supabase = createClient(supabaseUrl, supabaseKey);
 import { inventaire as inventaireData } from '@/data/inventaire';
 import { stock as stockData } from '@/data/stock';
 import { ventes as ventesData } from '@/data/ventes';
