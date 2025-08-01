@@ -4,6 +4,7 @@ import React, { useState } from 'react';
 import { supabase } from '@/lib/supabaseClient';
 
 export function SupabaseTest() {
+  // Force rebuild
   const [testResults, setTestResults] = useState<any>({});
   const [loading, setLoading] = useState<string | null>(null);
 
