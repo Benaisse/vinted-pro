@@ -11,6 +11,7 @@ import { ventes as ventesData } from "@/data/ventes";
 import { ArticleFormModal, Article } from "@/components/ArticleFormModal";
 import { motion, AnimatePresence } from "framer-motion";
 import { ImportVintedModal } from "@/components/ImportVintedCSVButton";
+import { toast } from "react-hot-toast";
 
 // Types pour les périodes
 type PeriodType = '7j' | '30j' | '3m' | '1a' | 'custom';
@@ -45,7 +46,7 @@ function CustomTooltip({ active, payload, label }: any) {
 }
 
 export function Dashboard() {
-  const { ventes, stats } = useData();
+  const { ventes, stats, addArticle, addVente, boosts } = useData();
   const [modalOpen, setModalOpen] = React.useState(false);
   
   // États pour les filtres de période
@@ -55,6 +56,54 @@ export function Dashboard() {
     endDate: ''
   });
   const [showCustomPicker, setShowCustomPicker] = React.useState(false);
+  
+  // Fonction pour gérer l'import Vinted
+  const handleVintedImport = async (vintedArticles: any[]) => {
+    try {
+      for (const vintedArticle of vintedArticles) {
+        // Créer un article pour l'inventaire
+        const newArticle = {
+          id: Math.floor(Date.now() + Math.random() * 1000), // ID entier au lieu de décimal
+          nom: vintedArticle.nom,
+          categorie: vintedArticle.categorie || "Vêtements",
+          etat: "Très bon état",
+          marque: "",
+          taille: "",
+          prix: vintedArticle.prix,
+          cout: Math.round(vintedArticle.prix * 0.3), // Coût estimé à 30% du prix
+          marge: 0, // Sera calculé automatiquement
+          marge_pourcent: 0, // Sera calculé automatiquement
+          statut: "Vendu" as const, // Marqué comme vendu car c'est une vente Vinted
+          vues: 0,
+          likes: 0,
+          dateAjout: vintedArticle.date || new Date().toLocaleDateString('fr-FR'),
+          image: ""
+        };
+        
+        // Ajouter l'article à l'inventaire
+        await addArticle(newArticle);
+        
+        // Créer une vente correspondante
+        await addVente({
+          article: vintedArticle.nom || '',
+          categorie: vintedArticle.categorie || 'Vêtements',
+          acheteur: vintedArticle.acheteur || '',
+          prix: Number(vintedArticle.prix) || 0,
+          cout: Number(vintedArticle.cout) || Math.round(Number(vintedArticle.prix) * 0.3),
+          marge: 0, // Sera calculé automatiquement
+          marge_pourcent: 0, // Sera calculé automatiquement
+          date: vintedArticle.date || new Date().toLocaleDateString('fr-FR'),
+          statut: "Livré" as const
+        });
+      }
+      
+      // Message de confirmation
+      toast.success(`${vintedArticles.length} article(s) importé(s) avec succès ! Les articles ont été ajoutés à l'inventaire et les ventes correspondantes ont été créées.`);
+    } catch (error) {
+      console.error('Erreur lors de l\'import:', error);
+      toast.error('Erreur lors de l\'import des articles. Veuillez réessayer.');
+    }
+  };
   
   // Charger la période sauvegardée depuis localStorage
   React.useEffect(() => {
@@ -102,15 +151,35 @@ export function Dashboard() {
   // Filtrer les ventes selon la période
   const { startDate, endDate } = getPeriodDates(selectedPeriod);
   const filteredVentes = useMemo(() => ventes.filter(v => {
-    const venteDate = new Date(v.date.split('/').reverse().join('-'));
+    // Utiliser date_vente si disponible, sinon date (pour la compatibilité)
+    const dateStr = v.date_vente || v.date;
+    if (!dateStr) return false;
+    
+    // Gérer les différents formats de date
+    let venteDate: Date;
+    if (dateStr.includes('/')) {
+      // Format DD/MM/YYYY
+      venteDate = new Date(dateStr.split('/').reverse().join('-'));
+    } else {
+      // Format YYYY-MM-DD (Supabase)
+      venteDate = new Date(dateStr);
+    }
+    
     return venteDate >= startDate && venteDate <= endDate;
   }), [ventes, startDate, endDate]);
 
-  // Calculer les métriques filtrées à partir des ventes réelles
-  const totalCA = useMemo(() => filteredVentes.reduce((sum, v) => sum + v.prix, 0), [filteredVentes]);
-  const totalRevenuNet = useMemo(() => filteredVentes.reduce((sum, v) => sum + v.marge, 0), [filteredVentes]);
-  const totalRevenus = useMemo(() => filteredVentes.reduce((sum, v) => sum + (v.prix - v.cout), 0), [filteredVentes]);
-  const margeMoyenne = useMemo(() => filteredVentes.length > 0 ? (filteredVentes.reduce((sum, v) => sum + v.margePourcent, 0) / filteredVentes.length) : 0, [filteredVentes]);
+  // Calcul de la dépense Boosts sur la période sélectionnée
+  const filteredBoosts = React.useMemo(() => boosts.filter(b => {
+    const date = new Date(b.date_commande);
+    return date >= startDate && date <= endDate;
+  }), [boosts, startDate, endDate]);
+  const totalDepenseBoosts = filteredBoosts.reduce((sum, b) => sum + b.montant_regle, 0);
+
+  // Calculs financiers ajustés
+  const totalCA = React.useMemo(() => filteredVentes.reduce((sum, v) => sum + v.prix, 0) - totalDepenseBoosts, [filteredVentes, totalDepenseBoosts]);
+  const totalRevenuNet = React.useMemo(() => filteredVentes.reduce((sum, v) => sum + v.marge, 0) - totalDepenseBoosts, [filteredVentes, totalDepenseBoosts]);
+  const totalRevenus = React.useMemo(() => filteredVentes.reduce((sum, v) => sum + (v.prix - v.cout), 0) - totalDepenseBoosts, [filteredVentes, totalDepenseBoosts]);
+  const margeMoyenne = React.useMemo(() => filteredVentes.length > 0 ? ((filteredVentes.reduce((sum, v) => sum + v.marge_pourcent, 0) / filteredVentes.length)) : 0, [filteredVentes]);
 
   // Calculer les tendances (mock - basé sur la période précédente)
   const getTendance = (current: number, previous: number): number => {
@@ -189,7 +258,20 @@ export function Dashboard() {
 
   const { prevStart, prevEnd } = getPreviousPeriodDates(selectedPeriod, customDateRange);
   const previousVentes = ventes.filter(v => {
-    const venteDate = new Date(v.date.split('/').reverse().join('-'));
+    // Utiliser date_vente si disponible, sinon date (pour la compatibilité)
+    const dateStr = v.date_vente || v.date;
+    if (!dateStr) return false;
+    
+    // Gérer les différents formats de date
+    let venteDate: Date;
+    if (dateStr.includes('/')) {
+      // Format DD/MM/YYYY
+      venteDate = new Date(dateStr.split('/').reverse().join('-'));
+    } else {
+      // Format YYYY-MM-DD (Supabase)
+      venteDate = new Date(dateStr);
+    }
+    
     return venteDate >= prevStart && venteDate <= prevEnd;
   });
   const previousCA = previousVentes.reduce((sum, v) => sum + v.prix, 0);
@@ -216,6 +298,15 @@ export function Dashboard() {
 
   // Résumé rapide (mock)
   const stockCritique = stats.stockFaible + stats.stockRupture;
+
+  // Calcul de la dépense Boosts sur la période sélectionnée
+  // const filteredBoosts = React.useMemo(() => boosts.filter(b => {
+  //   const date = new Date(b.date_commande);
+  //   return date >= startDate && date <= endDate;
+  // }), [boosts, startDate, endDate]);
+  // const totalDepenseBoosts = filteredBoosts.reduce((sum, b) => sum + b.montant_regle, 0);
+  // Calcul du bénéfice net réel
+  // const beneficeNetReel = totalRevenuNet - totalDepenseBoosts;
 
   // Handler pour changer de période
   const handlePeriodChange = (period: PeriodType) => {
@@ -270,8 +361,24 @@ export function Dashboard() {
 
   // Dataset dynamique pour le graphique d'évolution financière (groupé par mois)
   const chartData = filteredVentes.reduce((acc, v) => {
-    // On suppose date au format DD/MM/YYYY
-    const [day, month, year] = v.date.split('/');
+    // Utiliser date_vente si disponible, sinon date (pour la compatibilité)
+    const dateStr = v.date_vente || v.date;
+    if (!dateStr) return acc; // Ignorer les ventes sans date
+    
+    // Gérer les différents formats de date
+    let month: string, year: string;
+    if (dateStr.includes('/')) {
+      // Format DD/MM/YYYY
+      const [day, monthStr, yearStr] = dateStr.split('/');
+      month = monthStr;
+      year = yearStr;
+    } else {
+      // Format YYYY-MM-DD (Supabase)
+      const date = new Date(dateStr);
+      month = String(date.getMonth() + 1).padStart(2, '0');
+      year = String(date.getFullYear());
+    }
+    
     const key = `${month}/${year}`;
     let entry = acc.find(e => e.month === key);
     if (!entry) {
@@ -285,7 +392,7 @@ export function Dashboard() {
   }, [] as { month: string, ca: number, revenus: number, marge: number }[]);
 
   // Calcul dynamique de la tendance de la marge moyenne
-  const margeMoyennePrecedente = previousVentes.length > 0 ? (previousVentes.reduce((sum, v) => sum + v.margePourcent, 0) / previousVentes.length) : 0;
+  const margeMoyennePrecedente = previousVentes.length > 0 ? (previousVentes.reduce((sum, v) => sum + v.marge_pourcent, 0) / previousVentes.length) : 0;
   const tendanceMargeMoyenne = getTendance(margeMoyenne, margeMoyennePrecedente);
 
   return (
@@ -316,7 +423,7 @@ export function Dashboard() {
               <p className="text-slate-600 mt-2 text-lg">Vue d'ensemble de vos performances Vinted</p>
             </div>
             <div className="flex items-center gap-3">
-              <ImportVintedModal onImport={(articles) => {/* TODO: ajouter à l'inventaire */}} />
+              <ImportVintedModal onImport={handleVintedImport} />
               <Button 
                 variant="outline" 
                 className="flex items-center gap-2 bg-white/80 backdrop-blur-sm border-slate-200 hover:bg-white transition-all duration-200 hover:scale-105 hover:shadow-lg hover:border-indigo-300"
@@ -631,6 +738,8 @@ function StatCard({ title, value, subtitle, icon, color, trend }: {
     green: 'bg-gradient-to-br from-green-500 to-green-600',
     purple: 'bg-gradient-to-br from-purple-500 to-purple-600',
     orange: 'bg-gradient-to-br from-orange-500 to-orange-600',
+    pink: 'bg-gradient-to-br from-pink-500 to-pink-600',
+    red: 'bg-gradient-to-br from-red-500 to-red-600',
   };
 
   return (

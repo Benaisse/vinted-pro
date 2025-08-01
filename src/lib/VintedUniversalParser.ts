@@ -6,6 +6,7 @@ export interface VintedArticle {
   acheteur?: string;
   prix: number;
   date?: string;
+  categorie?: string;
   [key: string]: any;
 }
 
@@ -25,13 +26,17 @@ export class VintedUniversalParser {
   // --- CSV ---
   private static parseCSV(content: string): VintedArticle[] {
     const { data } = Papa.parse(content, { header: true, skipEmptyLines: true });
-    return (data as any[]).map(row => ({
-      nom: row["Nom de l'article"] || row["Article"] || row["Nom"] || "",
-      acheteur: row["Acheteur"] || row["Acheteuse"] || row["Acheteur/Acheteuse"] || "",
-      prix: parseFloat(row["Prix"] || row["Montant"] || row["Prix de vente"] || "0"),
-      date: row["Date"] || row["date"] || '',
-      ...row
-    })).filter(a => a.nom && a.prix);
+    return (data as any[]).map(row => {
+      const nom = row["Nom de l'article"] || row["Article"] || row["Nom"] || "";
+      return {
+        nom,
+        acheteur: row["Acheteur"] || row["Acheteuse"] || row["Acheteur/Acheteuse"] || "",
+        prix: parseFloat(row["Prix"] || row["Montant"] || row["Prix de vente"] || "0"),
+        date: row["Date"] || row["date"] || '',
+        categorie: row["Catégorie"] || row["Category"] || this.extractCategoryFromName(nom),
+        ...row
+      };
+    }).filter(a => a.nom && a.prix);
   }
   // --- HTML ---
   private static parseHTML(content: string): VintedArticle[] {
@@ -74,13 +79,61 @@ export class VintedUniversalParser {
           // Le nom est la ligne de nom, nettoyé des caractères superflus
           const nom = nomLine.replace(/[-:•]$/, '').trim();
           
+          // Extraire la catégorie depuis le nom de l'article
+          const categorie = this.extractCategoryFromName(nom);
+          
           if (nom && prix > 0) {
-            articles.push({ nom, prix, date, acheteur });
+            articles.push({ 
+              nom, 
+              prix, 
+              date, 
+              acheteur,
+              categorie 
+            });
           }
         }
       }
     }
     return articles;
+  }
+
+  // Méthode pour extraire la catégorie depuis le nom de l'article
+  public static extractCategoryFromName(nom: string): string {
+    const nomLower = nom.toLowerCase();
+    
+    // Détection des chaussures
+    if (nomLower.includes('chaussure') || nomLower.includes('sneaker') || nomLower.includes('basket') || 
+        nomLower.includes('talon') || nomLower.includes('escarpin') || nomLower.includes('mocassin') ||
+        nomLower.includes('rangers') || nomLower.includes('boots') || nomLower.includes('sandale') ||
+        nomLower.includes('ballerine') || nomLower.includes('mule') || nomLower.includes('espadrille')) {
+      return 'Chaussures';
+    }
+    
+    // Détection des sacs
+    if (nomLower.includes('sac') || nomLower.includes('bag') || nomLower.includes('tote') || 
+        nomLower.includes('pochette') || nomLower.includes('clutch') || nomLower.includes('backpack')) {
+      return 'Sacs';
+    }
+    
+    // Détection des accessoires
+    if (nomLower.includes('casquette') || nomLower.includes('chapeau') || nomLower.includes('cap') ||
+        nomLower.includes('bijou') || nomLower.includes('collier') || nomLower.includes('bracelet') ||
+        nomLower.includes('montre') || nomLower.includes('ceinture') || nomLower.includes('écharpe') ||
+        nomLower.includes('gant') || nomLower.includes('chaussette') || nomLower.includes('sous-vêtement')) {
+      return 'Accessoires';
+    }
+    
+    // Détection des vêtements (par défaut)
+    if (nomLower.includes('robe') || nomLower.includes('pantalon') || nomLower.includes('jean') ||
+        nomLower.includes('t-shirt') || nomLower.includes('pull') || nomLower.includes('sweat') ||
+        nomLower.includes('veste') || nomLower.includes('manteau') || nomLower.includes('blazer') ||
+        nomLower.includes('chemise') || nomLower.includes('jupe') || nomLower.includes('short') ||
+        nomLower.includes('combinaison') || nomLower.includes('top') || nomLower.includes('cardigan')) {
+      return 'Vêtements';
+    }
+    
+    // Par défaut, on met Vêtements si on ne trouve rien de spécifique
+    return 'Vêtements';
   }
   // --- TXT ---
   private static parseTXT(content: string): VintedArticle[] {
@@ -91,14 +144,18 @@ export class VintedUniversalParser {
     try {
       const data = JSON.parse(content);
       const items = Array.isArray(data) ? data : data.commands || data.orders || data.items || [data];
-      return items.map((item: any) => ({
-        nom: item.nom || item.name || '',
-        acheteur: item.acheteur || item.buyer || '',
-        prix: item.prix || item.price || item.total || 0,
-        date: item.date || '',
-        ...item
-      })).filter((a: any) => a.nom && a.prix);
-    } catch {
+      return items.map((item: any) => {
+        const nom = item.nom || item.name || '';
+        return {
+          nom,
+          acheteur: item.acheteur || item.buyer || '',
+          prix: item.prix || item.price || item.total || 0,
+          date: item.date || '',
+          categorie: item.categorie || item.category || this.extractCategoryFromName(nom),
+          ...item
+        };
+      }).filter((a: any) => a.nom && a.prix);
+    } catch (e) {
       return [];
     }
   }
@@ -111,7 +168,8 @@ export class VintedUniversalParser {
       const acheteur = this.extractTag(xmlBlock, ['acheteur', 'buyer']);
       const prix = parseFloat(this.extractTag(xmlBlock, ['prix', 'price', 'total']) || '0');
       const date = this.extractTag(xmlBlock, ['date', 'timestamp']);
-      return { nom, acheteur, prix, date };
+      const categorie = this.extractTag(xmlBlock, ['categorie', 'category']);
+      return { nom, acheteur, prix, date, categorie };
     }).filter(a => a.nom && a.prix);
   }
   private static extractTag(xml: string, tags: string[]): string {

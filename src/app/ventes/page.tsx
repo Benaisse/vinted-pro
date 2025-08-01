@@ -43,7 +43,7 @@ interface Vente {
   prix: number;
   cout: number;
   marge: number;
-  margePourcent: number;
+  marge_pourcent: number;
   date: string;
   statut: "Livré" | "Expédié" | "En cours";
 }
@@ -52,7 +52,7 @@ const categories = ["Toutes", "Vêtements", "Chaussures", "Sacs", "Accessoires"]
 const statuts = ["Tous", "En cours", "Expédié", "Livré"];
 
 export default function VentesPage() {
-  const { ventes, addVente } = useData();
+  const { ventes, addVente, boosts } = useData();
   const [filtreCategorie, setFiltreCategorie] = useState("Toutes");
   const [filtreStatut, setFiltreStatut] = useState("Tous");
   const [recherche, setRecherche] = useState("");
@@ -96,6 +96,16 @@ export default function VentesPage() {
     return matchCategorie && matchStatut && matchRecherche && matchDate && matchPrix;
   });
 
+  // Calcul de la dépense Boosts sur la période sélectionnée
+  const filteredBoosts = React.useMemo(() => boosts.filter(b => {
+    if (!dateDebut && !dateFin) return true;
+    const date = new Date(b.date_commande);
+    if (dateDebut && date < new Date(dateDebut)) return false;
+    if (dateFin && date > new Date(dateFin)) return false;
+    return true;
+  }), [boosts, dateDebut, dateFin]);
+  const totalDepenseBoosts = filteredBoosts.reduce((sum, b) => sum + b.montant_regle, 0);
+
   // Pagination
   const indexDebut = (pageCourante - 1) * elementsParPage;
   const indexFin = indexDebut + elementsParPage;
@@ -105,10 +115,10 @@ export default function VentesPage() {
   // Calcul des statistiques
   const stats = {
     ventesTotales: ventesFiltrees.length,
-    chiffreAffaires: ventesFiltrees.reduce((sum, v) => sum + v.prix, 0),
-    margeTotale: ventesFiltrees.reduce((sum, v) => sum + v.marge, 0),
-    panierMoyen: ventesFiltrees.length > 0 ? ventesFiltrees.reduce((sum, v) => sum + v.prix, 0) / ventesFiltrees.length : 0,
-    revenuNet: ventesFiltrees.reduce((sum, v) => sum + v.marge, 0),
+    chiffreAffaires: ventesFiltrees.reduce((sum, v) => sum + v.prix, 0) - totalDepenseBoosts,
+    margeTotale: ventesFiltrees.reduce((sum, v) => sum + v.marge, 0) - totalDepenseBoosts,
+    panierMoyen: ventesFiltrees.length > 0 ? (ventesFiltrees.reduce((sum, v) => sum + v.prix, 0) - totalDepenseBoosts) / ventesFiltrees.length : 0,
+    revenuNet: ventesFiltrees.reduce((sum, v) => sum + v.marge, 0) - totalDepenseBoosts,
   };
 
   // Validation du formulaire
@@ -132,7 +142,7 @@ export default function VentesPage() {
     const prix = parseFloat(nouvelleVente.prix);
     const cout = parseFloat(nouvelleVente.cout);
     const marge = prix - cout;
-    const margePourcent = prix > 0 ? (marge / prix) * 100 : 0;
+    const marge_pourcent = prix > 0 ? (marge / prix) * 100 : 0;
 
     const nouvelleVenteComplete = {
       article: nouvelleVente.article,
@@ -141,7 +151,7 @@ export default function VentesPage() {
       prix,
       cout,
       marge,
-      margePourcent,
+      marge_pourcent,
       date: nouvelleVente.date,
       statut: nouvelleVente.statut,
     };
@@ -175,7 +185,7 @@ export default function VentesPage() {
         v.prix,
         v.cout,
         v.marge,
-        `${v.margePourcent.toFixed(1)}%`,
+        `${v.marge_pourcent.toFixed(1)}%`,
         v.date,
         v.statut
       ].join(","))
@@ -487,7 +497,7 @@ export default function VentesPage() {
           />
           <StatCard
             title="Chiffre d'affaires"
-            value={stats.chiffreAffaires != null ? stats.chiffreAffaires.toFixed(0) + '€' : '0€'}
+            value={stats.chiffreAffaires != null ? Math.round(stats.chiffreAffaires) + '€' : '0€'}
             subtitle="Total des ventes"
             icon={<DollarSign className="w-6 h-6" />}
             color="blue"
@@ -495,7 +505,7 @@ export default function VentesPage() {
           />
           <StatCard
             title="Revenu net"
-            value={stats.revenuNet != null ? stats.revenuNet.toFixed(0) + '€' : '0€'}
+            value={stats.revenuNet != null ? Math.round(stats.revenuNet) + '€' : '0€'}
             subtitle="Après coût d'achat"
             icon={<TrendingUp className="w-6 h-6" />}
             color="green"
@@ -700,171 +710,44 @@ export default function VentesPage() {
               </thead>
               <tbody className="bg-white divide-y divide-slate-100">
                 {ventesPage.length === 0 ? (
-                  <motion.tr
-                    initial={{ opacity: 0, scale: 0.9 }}
-                    animate={{ opacity: 1, scale: 1 }}
-                    transition={{ duration: 0.5, ease: "easeOut" }}
-                  >
-                    <td colSpan={8} className="text-center py-12">
-                      <div className="flex flex-col items-center gap-3">
-                        <motion.div
-                          initial={{ scale: 0 }}
-                          animate={{ scale: 1 }}
-                          transition={{ delay: 0.2, duration: 0.5, ease: "easeOut" }}
-                        >
-                          <Package className="w-12 h-12 text-slate-300" />
-                        </motion.div>
-                        <motion.p
-                          initial={{ opacity: 0, y: 10 }}
-                          animate={{ opacity: 1, y: 0 }}
-                          transition={{ delay: 0.4, duration: 0.5, ease: "easeOut" }}
-                          className="text-slate-500 text-lg"
-                        >
-                          Aucune vente trouvée
-                        </motion.p>
-                        <motion.p
-                          initial={{ opacity: 0, y: 10 }}
-                          animate={{ opacity: 1, y: 0 }}
-                          transition={{ delay: 0.6, duration: 0.5, ease: "easeOut" }}
-                          className="text-slate-400 text-sm"
-                        >
-                          Essayez d'ajuster vos filtres ou d'ajouter une nouvelle vente
-                        </motion.p>
-                      </div>
-                    </td>
-                  </motion.tr>
+                  <tr>
+                    <td colSpan={8} className="text-center py-12">Aucune vente trouvée</td>
+                  </tr>
                 ) : (
                   ventesPage.map((vente, index) => (
-                    <motion.tr
-                      key={vente.id}
-                      initial={{ opacity: 0, x: -20, scale: 0.95 }}
-                      animate={{ opacity: 1, x: 0, scale: 1 }}
-                      transition={{ 
-                        delay: index * 0.1, 
-                        duration: 0.5, 
-                        ease: "easeOut" 
-                      }}
-                      whileHover={{ 
-                        scale: 1.02,
-                        backgroundColor: "rgba(99, 102, 241, 0.02)",
-                        transition: { duration: 0.2 }
-                      }}
-                      className="group relative overflow-hidden"
-                    >
-                      {/* Effet de shimmer au hover */}
-                      <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent -translate-x-full group-hover:translate-x-full transition-transform duration-700 ease-out opacity-0 group-hover:opacity-100"></div>
-                      
+                    <motion.tr key={vente.id} initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.2, delay: index * 0.03 }} className="hover:bg-indigo-50 transition">
+                      {/* Article */}
                       <td className="px-6 py-4 relative z-10">
-                        <motion.div 
-                          className="flex items-center"
-                          whileHover={{ scale: 1.05 }}
-                          transition={{ duration: 0.2 }}
-                        >
-                          <motion.div 
-                            className="w-10 h-10 bg-gradient-to-br from-indigo-100 to-purple-100 rounded-lg flex items-center justify-center mr-3"
-                            whileHover={{ rotate: 5, scale: 1.1 }}
-                            transition={{ duration: 0.2 }}
-                          >
+                        <motion.div className="flex items-center" whileHover={{ scale: 1.05 }} transition={{ duration: 0.2 }}>
+                          <motion.div className="w-10 h-10 bg-gradient-to-br from-indigo-100 to-purple-100 rounded-lg flex items-center justify-center mr-3" whileHover={{ rotate: 5, scale: 1.1 }} transition={{ duration: 0.2 }}>
                             <Package className="w-5 h-5 text-indigo-600" />
                           </motion.div>
-                          <div>
-                            <div className="text-sm font-medium text-slate-900">{vente.article}</div>
-                            <div className="text-xs text-slate-500">ID: {vente.id}</div>
-                          </div>
+                          <span className="font-semibold text-slate-800 truncate max-w-[180px]">{vente.article}</span>
                         </motion.div>
                       </td>
+                      {/* Catégorie */}
                       <td className="px-6 py-4 relative z-10">
-                        <motion.span 
-                          className="inline-flex px-3 py-1 text-xs font-semibold rounded-full bg-blue-100 text-blue-800"
-                          whileHover={{ scale: 1.1, rotate: 2 }}
-                          transition={{ duration: 0.2 }}
-                        >
+                        <motion.span className="inline-flex px-3 py-1 text-xs font-semibold rounded-full bg-blue-100 text-blue-800" whileHover={{ scale: 1.1, rotate: 2 }} transition={{ duration: 0.2 }}>
                           {vente.categorie}
                         </motion.span>
                       </td>
-                      <td className="px-6 py-4 relative z-10">
-                        <motion.div 
-                          className="flex items-center"
-                          whileHover={{ scale: 1.05 }}
-                          transition={{ duration: 0.2 }}
-                        >
-                          <motion.div 
-                            className="w-8 h-8 bg-gradient-to-br from-green-100 to-emerald-100 rounded-full flex items-center justify-center mr-2"
-                            whileHover={{ rotate: -5, scale: 1.1 }}
-                            transition={{ duration: 0.2 }}
-                          >
-                            <Users className="w-4 h-4 text-green-600" />
-                          </motion.div>
-                          <span className="text-sm text-slate-900">{vente.acheteur}</span>
-                        </motion.div>
+                      {/* Acheteur */}
+                      <td className="px-6 py-4 text-slate-700">{vente.acheteur}</td>
+                      {/* Prix */}
+                      <td className="px-6 py-4 text-slate-700">{vente.prix}€</td>
+                      {/* Marge */}
+                      <td className="px-6 py-4 text-slate-700">
+                        {vente.marge}€
+                        <br />
+                        <span className="text-xs text-slate-400">{vente.marge_pourcent}%</span>
                       </td>
-                      <td className="px-6 py-4 relative z-10">
-                        <motion.div 
-                          className="text-sm font-semibold text-slate-900"
-                          whileHover={{ scale: 1.05 }}
-                          transition={{ duration: 0.2 }}
-                        >
-                          {vente.prix}€
-                        </motion.div>
-                        <div className="text-xs text-slate-500">Coût: {vente.cout}€</div>
-                      </td>
-                      <td className="px-6 py-4 relative z-10">
-                        <motion.div 
-                          className="flex items-center gap-2"
-                          whileHover={{ scale: 1.05 }}
-                          transition={{ duration: 0.2 }}
-                        >
-                          <div className="text-sm font-semibold text-green-600">{vente.marge}€</div>
-                          <motion.div 
-                            className="text-xs bg-green-100 text-green-700 px-2 py-1 rounded-full"
-                            whileHover={{ scale: 1.1, rotate: 2 }}
-                            transition={{ duration: 0.2 }}
-                          >
-                            {vente.margePourcent.toFixed(1)}%
-                          </motion.div>
-                        </motion.div>
-                      </td>
-                      <td className="px-6 py-4 text-sm text-slate-600 relative z-10">{vente.date}</td>
-                      <td className="px-6 py-4 relative z-10">
-                        <motion.div
-                          whileHover={{ scale: 1.1 }}
-                          transition={{ duration: 0.2 }}
-                        >
-                          <StatusBadge statut={vente.statut} />
-                        </motion.div>
-                      </td>
-                      <td className="px-6 py-4 relative z-10">
-                        <motion.div 
-                          className="flex items-center gap-2 opacity-0 group-hover:opacity-100 transition-opacity duration-300"
-                          initial={{ opacity: 0, x: 10 }}
-                          whileHover={{ opacity: 1, x: 0 }}
-                          transition={{ duration: 0.3 }}
-                        >
-                          <motion.button 
-                            className="p-2 text-slate-400 hover:text-blue-600 transition-colors rounded-lg hover:bg-blue-50"
-                            whileHover={{ scale: 1.2, rotate: 5 }}
-                            whileTap={{ scale: 0.9 }}
-                            transition={{ duration: 0.2 }}
-                          >
-                            <Eye className="w-4 h-4" />
-                          </motion.button>
-                          <motion.button 
-                            className="p-2 text-slate-400 hover:text-green-600 transition-colors rounded-lg hover:bg-green-50"
-                            whileHover={{ scale: 1.2, rotate: -5 }}
-                            whileTap={{ scale: 0.9 }}
-                            transition={{ duration: 0.2 }}
-                          >
-                            <Edit className="w-4 h-4" />
-                          </motion.button>
-                          <motion.button 
-                            className="p-2 text-slate-400 hover:text-red-600 transition-colors rounded-lg hover:bg-red-50"
-                            whileHover={{ scale: 1.2, rotate: 5 }}
-                            whileTap={{ scale: 0.9 }}
-                            transition={{ duration: 0.2 }}
-                          >
-                            <Trash2 className="w-4 h-4" />
-                          </motion.button>
-                        </motion.div>
+                      {/* Date */}
+                      <td className="px-6 py-4 text-slate-700">{vente.date}</td>
+                      {/* Statut */}
+                      <td className="px-6 py-4 text-slate-700">{vente.statut}</td>
+                      {/* Actions */}
+                      <td className="px-6 py-4 text-right">
+                        {/* Place tes boutons d'action ici */}
                       </td>
                     </motion.tr>
                   ))

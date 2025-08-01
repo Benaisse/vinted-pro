@@ -111,6 +111,7 @@ export function ImportVintedModal({ onImport }: { onImport: (articles: VintedArt
                     <thead className="sticky top-0 bg-indigo-100">
                       <tr>
                         <th className="px-3 py-2">Nom</th>
+                        <th className="px-3 py-2">Catégorie</th>
                         <th className="px-3 py-2">Acheteur</th>
                         <th className="px-3 py-2">Prix (€)</th>
                         <th className="px-3 py-2">Date</th>
@@ -122,6 +123,9 @@ export function ImportVintedModal({ onImport }: { onImport: (articles: VintedArt
                         <tr key={idx} className="even:bg-slate-50 hover:bg-indigo-50 transition">
                           <td className="px-3 py-2">
                             <input value={article.nom} onChange={e => handleEdit(idx, 'nom', e.target.value)} className="w-full bg-transparent border-b border-indigo-200 focus:outline-none focus:border-indigo-500" />
+                          </td>
+                          <td className="px-3 py-2">
+                            <input value={article.categorie || ''} onChange={e => handleEdit(idx, 'categorie', e.target.value)} className="w-full bg-transparent border-b border-indigo-200 focus:outline-none focus:border-indigo-500" />
                           </td>
                           <td className="px-3 py-2">
                             <input value={article.acheteur || ''} onChange={e => handleEdit(idx, 'acheteur', e.target.value)} className="w-full bg-transparent border-b border-indigo-200 focus:outline-none focus:border-indigo-500" />

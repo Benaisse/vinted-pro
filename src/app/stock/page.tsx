@@ -3,7 +3,7 @@
 import React, { useState, useMemo, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { stock as stockData } from "@/data/stock";
+// Les données viennent maintenant de Supabase via DataContext
 import { Plus, Search, Filter, Package, AlertTriangle, TrendingUp, DollarSign, AlertCircle, Edit, Plus as PlusIcon, Minus as MinusIcon, RefreshCw, ChevronDown, X, Check, Clock, Truck, Users, BarChart3, Sparkles } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useData } from "@/contexts/DataContext";
@@ -108,6 +108,74 @@ export default function StockPage() {
     setPageCourante(1);
   };
 
+  // Fonction pour créer des données de test
+  const createTestData = async () => {
+    const testItems = [
+      {
+        nom: "Robe Zara fleurie",
+        categorie: "Vêtements",
+        quantite: 5,
+        seuilAlerte: 3,
+        prixUnitaire: 25,
+        valeurTotale: 125,
+        statut: "Normal" as const,
+        derniereMiseAJour: new Date().toLocaleDateString('fr-FR')
+      },
+      {
+        nom: "Sneakers Nike Air Max",
+        categorie: "Chaussures",
+        quantite: 2,
+        seuilAlerte: 5,
+        prixUnitaire: 65,
+        valeurTotale: 130,
+        statut: "Faible" as const,
+        derniereMiseAJour: new Date().toLocaleDateString('fr-FR')
+      },
+      {
+        nom: "Sac Louis Vuitton",
+        categorie: "Sacs",
+        quantite: 0,
+        seuilAlerte: 2,
+        prixUnitaire: 120,
+        valeurTotale: 0,
+        statut: "Rupture" as const,
+        derniereMiseAJour: new Date().toLocaleDateString('fr-FR')
+      },
+      {
+        nom: "Jean Levi's 501",
+        categorie: "Vêtements",
+        quantite: 8,
+        seuilAlerte: 3,
+        prixUnitaire: 40,
+        valeurTotale: 320,
+        statut: "Normal" as const,
+        derniereMiseAJour: new Date().toLocaleDateString('fr-FR')
+      },
+      {
+        nom: "Montre Daniel Wellington",
+        categorie: "Accessoires",
+        quantite: 3,
+        seuilAlerte: 2,
+        prixUnitaire: 85,
+        valeurTotale: 255,
+        statut: "Normal" as const,
+        derniereMiseAJour: new Date().toLocaleDateString('fr-FR')
+      }
+    ];
+
+    try {
+      for (const item of testItems) {
+        await addStockItem(item);
+      }
+      setMessageSucces("Données de test créées avec succès !");
+      setTimeout(() => setMessageSucces(""), 3000);
+    } catch (error) {
+      console.error('Erreur lors de la création des données de test:', error);
+      setMessageSucces("Erreur lors de la création des données de test");
+      setTimeout(() => setMessageSucces(""), 3000);
+    }
+  };
+
   const categories = ["Toutes", "Vêtements", "Chaussures", "Sacs", "Accessoires"];
   const statuts = ["Tous", "Normal", "Faible", "Rupture"];
 
@@ -136,6 +204,14 @@ export default function StockPage() {
               <p className="text-slate-600 mt-2 text-lg">Gérez vos stocks et alertes</p>
             </div>
             <div className="flex items-center gap-3">
+              <Button 
+                variant="outline"
+                onClick={createTestData} 
+                className="flex items-center gap-2 bg-white/80 backdrop-blur-sm border-slate-200 hover:bg-white hover:border-indigo-300 transition-all duration-200 hover:scale-105 hover:shadow-lg"
+              >
+                <Sparkles className="w-4 h-4 group-hover:rotate-12 transition-transform duration-200" />
+                Données de test
+              </Button>
               <Button 
                 onClick={() => setModalOuvert(true)} 
                 className="flex items-center gap-2 bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 text-white shadow-lg hover:shadow-xl transition-all duration-200 hover:scale-105"

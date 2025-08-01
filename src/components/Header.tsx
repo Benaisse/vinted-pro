@@ -306,9 +306,13 @@ export function Header({
     setNotifications(notifs => notifs.map((n: Notification) => n.id === id ? { ...n, lue: true } : n));
   }, []);
 
-  const handleLogout = useCallback(() => {
-    signOut();
+  const handleLogout = useCallback(async () => {
+    console.log('Déconnexion cliquée');
+    await signOut();
     router.push('/login');
+    setTimeout(() => {
+      window.location.reload();
+    }, 200);
   }, [signOut, router]);
 
   // Fonction utilitaire pour le nom affiché
@@ -557,6 +561,7 @@ export function Header({
             <DropdownMenuItem 
               onClick={handleLogout}
               className="hover:bg-red-50 text-red-600"
+              style={{ cursor: 'pointer', pointerEvents: 'auto' }}
             >
               Déconnexion
             </DropdownMenuItem>
@@ -598,6 +603,7 @@ export function Header({
             <DropdownMenuItem 
               onClick={handleLogout}
               className="hover:bg-red-50 text-red-600"
+              style={{ cursor: 'pointer', pointerEvents: 'auto' }}
             >
               Déconnexion
             </DropdownMenuItem>

@@ -144,7 +144,7 @@ export default function AnalyticsPage() {
       });
     }
     // Marge faible
-    const margeFaible = articles.filter(a => a.margePourcent < 50).length;
+    const margeFaible = articles.filter(a => a.marge_pourcent < 50).length;
     if (margeFaible > 0) {
       insights.push({
         type: "warning",
@@ -165,7 +165,9 @@ export default function AnalyticsPage() {
       marge: 0
     }));
     ventes.forEach(v => {
-      const [day, month, year] = v.date.split('/');
+      const dateStr = v.date_vente || v.date;
+      if (!dateStr) return; // Ignorer les ventes sans date
+      const [day, month, year] = dateStr.split('/');
       const idx = parseInt(month, 10) - 1;
       if (grouped[idx]) {
         grouped[idx].ventes += 1;
@@ -259,11 +261,15 @@ export default function AnalyticsPage() {
   const { prevStart, prevEnd } = getPreviousPeriodDatesAnalytics(periode);
   const ventesFiltrees = categorie === "Toutes" ? ventes : ventes.filter(v => v.categorie === categorie);
   const ventesPeriode = ventesFiltrees.filter(v => {
-    const venteDate = new Date(v.date.split('/').reverse().join('-'));
+    const dateStr = v.date_vente || v.date;
+    if (!dateStr) return false; // Ignorer les ventes sans date
+    const venteDate = new Date(dateStr.split('/').reverse().join('-'));
     return venteDate >= startDate && venteDate <= endDate;
   });
   const previousVentes = ventesFiltrees.filter(v => {
-    const venteDate = new Date(v.date.split('/').reverse().join('-'));
+    const dateStr = v.date_vente || v.date;
+    if (!dateStr) return false; // Ignorer les ventes sans date
+    const venteDate = new Date(dateStr.split('/').reverse().join('-'));
     return venteDate >= prevStart && venteDate <= prevEnd;
   });
   function getTendance(current: number, previous: number) {

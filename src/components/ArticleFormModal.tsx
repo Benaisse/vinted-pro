@@ -14,7 +14,7 @@ export interface Article {
   prix: number;
   cout: number;
   marge: number;
-  margePourcent: number;
+  marge_pourcent: number;
   statut: "En vente" | "Vendu" | "Archivé";
   vues: number;
   likes: number;
@@ -44,7 +44,7 @@ export function ArticleFormModal({ open, onClose, onSubmit, article }: ArticleFo
     prix: 0,
     cout: 0,
     marge: 0,
-    margePourcent: 0,
+    marge_pourcent: 0,
     statut: "En vente",
     vues: 0,
     likes: 0,
@@ -61,7 +61,7 @@ export function ArticleFormModal({ open, onClose, onSubmit, article }: ArticleFo
       setFormData({
         ...article,
         marge: article.marge ?? 0,
-        margePourcent: article.margePourcent ?? 0,
+        marge_pourcent: article.marge_pourcent ?? 0,
         vues: article.vues ?? 0,
         likes: article.likes ?? 0,
         dateAjout: article.dateAjout || new Date().toLocaleDateString("fr-FR"),
@@ -79,7 +79,7 @@ export function ArticleFormModal({ open, onClose, onSubmit, article }: ArticleFo
         prix: 0,
         cout: 0,
         marge: 0,
-        margePourcent: 0,
+        marge_pourcent: 0,
         statut: "En vente",
         vues: 0,
         likes: 0,
@@ -149,7 +149,7 @@ export function ArticleFormModal({ open, onClose, onSubmit, article }: ArticleFo
       id: formData.id || Date.now(),
       etat: formData.etat || "Très bon état",
       marge,
-      margePourcent,
+      marge_pourcent: margePourcent,
       vues: formData.vues ?? 0,
       likes: formData.likes ?? 0,
       dateAjout: formData.dateAjout || new Date().toLocaleDateString("fr-FR"),

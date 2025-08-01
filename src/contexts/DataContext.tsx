@@ -4,6 +4,7 @@ import React, { createContext, useContext, useState, useEffect } from "react";
 import { Article } from "@/components/ArticleFormModal";
 import { supabase } from '@/lib/supabaseClient';
 import { useAuth } from './AuthContext';
+import { Boost, BoostFormData } from '@/types/boosts';
 
 // Types pour les données
 interface Vente {
@@ -14,8 +15,9 @@ interface Vente {
   prix: number;
   cout: number;
   marge: number;
-  margePourcent: number;
-  date: string;
+  marge_pourcent: number;
+  date: string; // Pour l'interface, on garde 'date' mais on mappe vers 'date_vente' dans Supabase
+  date_vente?: string; // Ajouté pour la compatibilité avec Supabase
   statut: "Livré" | "Expédié" | "En cours";
 }
 
@@ -37,6 +39,8 @@ export interface DataContextType {
   addArticle: (article: Article) => void;
   updateArticle: (article: Article) => void;
   deleteArticle: (id: number) => void;
+  deleteAllArticles: () => void;
+  forceRefreshData: () => void;
   
   // Ventes
   ventes: Vente[];
@@ -50,6 +54,12 @@ export interface DataContextType {
   addStockItem: (item: Omit<StockItem, 'id'>) => void;
   deleteStockItem: (id: number) => void;
   
+  // Boosts
+  boosts: Boost[];
+  addBoost: (boost: BoostFormData) => void;
+  updateBoost: (boost: Boost) => void;
+  deleteBoost: (id: number) => void;
+  
   // Statistiques globales
   stats: {
     totalArticles: number;
@@ -60,6 +70,8 @@ export interface DataContextType {
     articlesVendus: number;
     stockFaible: number;
     stockRupture: number;
+    totalBoosts: number;
+    totalDepenseBoosts: number;
   };
   
   // Actions synchronisées
@@ -81,6 +93,7 @@ export const DataProvider = ({ children }: { children: React.ReactNode }) => {
   const [articles, setArticles] = useState<Article[]>([]);
   const [ventes, setVentes] = useState<Vente[]>([]);
   const [stock, setStock] = useState<StockItem[]>([]);
+  const [boosts, setBoosts] = useState<Boost[]>([]);
   const [isLoaded, setIsLoaded] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -153,6 +166,26 @@ export const DataProvider = ({ children }: { children: React.ReactNode }) => {
     fetchVentes();
   }, [user, authLoading]);
 
+  // Charger les boosts dynamiquement depuis Supabase
+  useEffect(() => {
+    if (!user || authLoading) return;
+    const fetchBoosts = async () => {
+      if (!supabase) return;
+      const { data, error } = await supabase
+        .from('boosts')
+        .select('*')
+        .eq('user_id', user.id)
+        .order('date_commande', { ascending: false });
+      if (error) {
+        console.error('Erreur lors du chargement des boosts:', error);
+        setBoosts([]);
+      } else {
+        setBoosts(data || []);
+      }
+    };
+    fetchBoosts();
+  }, [user, authLoading]);
+
   // Calcul des statistiques en temps réel
   const stats = {
     totalArticles: articles.length,
@@ -163,33 +196,81 @@ export const DataProvider = ({ children }: { children: React.ReactNode }) => {
     articlesVendus: articles.filter(a => a.statut === "Vendu").length,
     stockFaible: stock.filter(s => s.statut === "Faible").length,
     stockRupture: stock.filter(s => s.statut === "Rupture").length,
+    totalBoosts: boosts.length,
+    totalDepenseBoosts: boosts.reduce((sum, b) => sum + b.montant_regle, 0),
   };
 
   // Actions pour les articles (INVENTAIRE)
   const addArticle = async (article: Article) => {
     setError(null);
     try {
-      if (!supabase) return;
+      if (!supabase) {
+        console.error('Supabase client non disponible');
+        return;
+      }
+      if (!user) {
+        console.error('Utilisateur non connecté');
+        return;
+      }
+      
+      // Créer un objet avec seulement les champs qui existent dans Supabase
+      // Ne pas inclure l'ID car Supabase le génère automatiquement
+      const articleForSupabase = {
+        nom: article.nom,
+        categorie: article.categorie,
+        description: article.description || '',
+        etat: article.etat,
+        marque: article.marque || '',
+        taille: article.taille || '',
+        prix: article.prix,
+        cout: article.cout,
+        statut: article.statut,
+        vues: article.vues || 0,
+        likes: article.likes || 0,
+        date_ajout: article.dateAjout || new Date().toISOString().split('T')[0],
+        image: article.image || '',
+        user_id: user.id
+      };
+      
+      console.log('Tentative d\'ajout d\'article:', articleForSupabase);
+      
       const { data, error } = await supabase
         .from('inventaire')
-        .insert([{ ...article, user_id: user.id }])
+        .insert([articleForSupabase])
         .select();
-      if (error) throw error;
+      
+      if (error) {
+        console.error('Erreur Supabase:', error);
+        throw error;
+      }
+      
+      console.log('Article ajouté avec succès:', data);
+      
       if (data && data.length > 0) {
         setArticles(prev => [data[0], ...prev]);
       }
     } catch (err: any) {
+      console.error('Erreur complète:', err);
       setError('Erreur lors de l\'ajout de l\'article.');
     }
   };
 
-  const updateArticle = async (article: Article) => {
+  const updateArticle = async (article: Article, oldNom?: string) => {
     setError(null);
     try {
       if (!supabase) return;
+      // Mettre à jour l'article dans l'inventaire
+      const articleForSupabase = {
+        nom: article.nom,
+        categorie: article.categorie,
+        etat: article.etat,
+        prix: article.prix,
+        cout: article.cout,
+        statut: article.statut
+      };
       const { data, error } = await supabase
         .from('inventaire')
-        .update({ ...article })
+        .update(articleForSupabase)
         .eq('id', article.id)
         .eq('user_id', user.id)
         .select();
@@ -197,6 +278,55 @@ export const DataProvider = ({ children }: { children: React.ReactNode }) => {
       if (data && data.length > 0) {
         setArticles(prev => prev.map(a => a.id === article.id ? data[0] : a));
       }
+      // Synchroniser les ventes
+      const nomRecherche = oldNom || article.nom;
+      const { data: ventesToUpdate, error: ventesError } = await supabase
+        .from('ventes')
+        .select('*')
+        .eq('user_id', user.id)
+        .eq('article', nomRecherche);
+      if (ventesError) throw ventesError;
+      if (ventesToUpdate && ventesToUpdate.length > 0) {
+        for (const vente of ventesToUpdate) {
+          const marge = vente.prix - article.cout;
+          const marge_pourcent = vente.prix > 0 ? (marge / vente.prix) * 100 : 0;
+          await supabase
+            .from('ventes')
+            .update({
+              article: article.nom,
+              categorie: article.categorie,
+              prix: article.prix,
+              cout: article.cout,
+              marge,
+              marge_pourcent
+            })
+            .eq('id', vente.id)
+            .eq('user_id', user.id);
+        }
+      }
+      // Synchroniser le stock
+      const { data: stockToUpdate, error: stockError } = await supabase
+        .from('stock')
+        .select('*')
+        .eq('user_id', user.id)
+        .eq('nom', nomRecherche);
+      if (stockError) throw stockError;
+      if (stockToUpdate && stockToUpdate.length > 0) {
+        for (const stockItem of stockToUpdate) {
+          await supabase
+            .from('stock')
+            .update({
+              nom: article.nom,
+              categorie: article.categorie,
+              prixUnitaire: article.prix,
+              cout: article.cout
+            })
+            .eq('id', stockItem.id)
+            .eq('user_id', user.id);
+        }
+      }
+      // Forcer la synchronisation globale
+      await forceRefreshData();
     } catch (err: any) {
       setError('Erreur lors de la modification de l\'article.');
     }
@@ -218,28 +348,175 @@ export const DataProvider = ({ children }: { children: React.ReactNode }) => {
     }
   };
 
-  // Actions pour les ventes
-  const addVente = (vente: Omit<Vente, 'id'>) => {
-    const newVente = {
-      ...vente,
-      id: Date.now(),
-      marge: vente.prix - vente.cout,
-      margePourcent: Math.round(((vente.prix - vente.cout) / vente.prix) * 100)
-    };
-    setVentes(prev => [newVente, ...prev]);
+  const deleteAllArticles = async () => {
+    setError(null);
+    try {
+      console.log('Début de deleteAllArticles...');
+      if (!supabase) {
+        console.error('Supabase client non disponible');
+        return;
+      }
+      if (!user) {
+        console.error('Utilisateur non connecté');
+        return;
+      }
+      console.log('Suppression de TOUTES les données pour user_id:', user.id);
+      
+      // Supprimer tous les articles
+      const { error: errorInventaire } = await supabase
+        .from('inventaire')
+        .delete()
+        .eq('user_id', user.id);
+      if (errorInventaire) {
+        console.error('Erreur suppression inventaire:', errorInventaire);
+        throw errorInventaire;
+      }
+      console.log('Articles supprimés avec succès');
+      
+      // Supprimer toutes les ventes
+      const { error: errorVentes } = await supabase
+        .from('ventes')
+        .delete()
+        .eq('user_id', user.id);
+      if (errorVentes) {
+        console.error('Erreur suppression ventes:', errorVentes);
+        throw errorVentes;
+      }
+      console.log('Ventes supprimées avec succès');
+      
+      // Supprimer tout le stock
+      const { error: errorStock } = await supabase
+        .from('stock')
+        .delete()
+        .eq('user_id', user.id);
+      if (errorStock) {
+        console.error('Erreur suppression stock:', errorStock);
+        throw errorStock;
+      }
+      console.log('Stock supprimé avec succès');
+      
+      // Supprimer tous les boosts
+      const { error: errorBoosts } = await supabase
+        .from('boosts')
+        .delete()
+        .eq('user_id', user.id);
+      if (errorBoosts) {
+        console.error('Erreur suppression boosts:', errorBoosts);
+        throw errorBoosts;
+      }
+      console.log('Boosts supprimés avec succès');
+      
+      // Vider tous les états locaux
+      setArticles([]);
+      setVentes([]);
+      setStock([]);
+      setBoosts([]);
+      console.log('Tous les états locaux mis à jour');
+    } catch (err: any) {
+      console.error('Erreur complète:', err);
+      setError('Erreur lors de la suppression de toutes les données.');
+    }
   };
 
-  const updateVente = (vente: Vente) => {
-    setVentes(prev => prev.map(v => 
-      v.id === vente.id 
-        ? { 
-            ...v, 
-            ...vente,
-            marge: vente.prix - vente.cout,
-            margePourcent: Math.round(((vente.prix - vente.cout) / vente.prix) * 100)
-          } 
-        : v
-    ));
+  // Fonction pour forcer la synchronisation des données
+  const forceRefreshData = async () => {
+    setError(null);
+    try {
+      console.log('Forçage de la synchronisation des données...');
+      if (!supabase || !user) {
+        console.error('Supabase ou utilisateur non disponible');
+        return;
+      }
+      
+      // Recharger toutes les données depuis Supabase
+      const { data: articlesData, error: articlesError } = await supabase
+        .from('inventaire')
+        .select('*')
+        .eq('user_id', user.id);
+      
+      const { data: ventesData, error: ventesError } = await supabase
+        .from('ventes')
+        .select('*')
+        .eq('user_id', user.id);
+      
+      const { data: stockData, error: stockError } = await supabase
+        .from('stock')
+        .select('*')
+        .eq('user_id', user.id);
+      
+      const { data: boostsData, error: boostsError } = await supabase
+        .from('boosts')
+        .select('*')
+        .eq('user_id', user.id);
+      
+      if (articlesError || ventesError || stockError || boostsError) {
+        throw articlesError || ventesError || stockError || boostsError;
+      }
+      
+      // Mettre à jour tous les états
+      setArticles(articlesData || []);
+      setVentes(ventesData || []);
+      setStock(stockData || []);
+      setBoosts(boostsData || []);
+      
+      console.log('Synchronisation forcée terminée');
+    } catch (err: any) {
+      console.error('Erreur lors de la synchronisation:', err);
+      setError('Erreur lors de la synchronisation des données.');
+    }
+  };
+
+  // Actions pour les ventes
+  const addVente = async (vente: Omit<Vente, 'id'>) => {
+    setError(null);
+    try {
+      if (!supabase) return;
+      const newVente = {
+        article: vente.article,
+        categorie: vente.categorie,
+        acheteur: vente.acheteur,
+        prix: vente.prix,
+        cout: vente.cout,
+        date_vente: vente.date,
+        statut: vente.statut,
+        frais_port: 0,
+        frais_commission: 0,
+        notes: '',
+        user_id: user.id
+      };
+      const { data, error } = await supabase
+        .from('ventes')
+        .insert([newVente])
+        .select();
+      if (error) throw error;
+      if (data && data.length > 0) {
+        setVentes(prev => [data[0], ...prev]);
+      }
+    } catch (err: any) {
+      setError('Erreur lors de l\'ajout de la vente.');
+    }
+  };
+
+  const updateVente = async (vente: Vente) => {
+    setError(null);
+    try {
+      if (!supabase) return;
+      const { data, error } = await supabase
+        .from('ventes')
+        .update({
+          ...vente,
+          // marge et marge_pourcent sont générés automatiquement par la BDD
+        })
+        .eq('id', vente.id)
+        .eq('user_id', user.id)
+        .select();
+      if (error) throw error;
+      if (data && data.length > 0) {
+        setVentes(prev => prev.map(v => v.id === vente.id ? data[0] : v));
+      }
+    } catch (err: any) {
+      setError("Erreur lors de la modification de la vente.");
+    }
   };
 
   const deleteVente = (id: number) => {
@@ -312,7 +589,7 @@ export const DataProvider = ({ children }: { children: React.ReactNode }) => {
       prix,
       cout: article.cout,
       marge: 0, // Sera calculé automatiquement
-      margePourcent: 0, // Sera calculé automatiquement
+      marge_pourcent: 0, // Sera calculé automatiquement
       date: new Date().toLocaleDateString('fr-FR'),
       statut: "En cours"
     });
@@ -364,7 +641,7 @@ export const DataProvider = ({ children }: { children: React.ReactNode }) => {
       prix: Number(obj.prix),
       cout: Number(obj.cout),
       marge: Number(obj.marge),
-      margePourcent: Number(obj.margePourcent),
+      marge_pourcent: Number(obj.marge_pourcent),
       date: String(obj.date),
       statut: (["Livré", "Expédié", "En cours"].includes(obj.statut) ? obj.statut : "En cours") as "Livré" | "Expédié" | "En cours"
     };
@@ -398,6 +675,59 @@ export const DataProvider = ({ children }: { children: React.ReactNode }) => {
     localStorage.removeItem('vinted-pro-stock');
   }, [user?.id]);
 
+  // Fonctions pour les boosts
+  const addBoost = async (boost: BoostFormData) => {
+    setError(null);
+    try {
+      if (!supabase) return;
+      const { data, error } = await supabase
+        .from('boosts')
+        .insert([{ ...boost, user_id: user.id }])
+        .select();
+      if (error) throw error;
+      if (data && data.length > 0) {
+        setBoosts(prev => [data[0], ...prev]);
+      }
+    } catch (err: any) {
+      setError('Erreur lors de l\'ajout du boost.');
+    }
+  };
+
+  const updateBoost = async (boost: Boost) => {
+    setError(null);
+    try {
+      if (!supabase) return;
+      const { data, error } = await supabase
+        .from('boosts')
+        .update(boost)
+        .eq('id', boost.id)
+        .eq('user_id', user.id)
+        .select();
+      if (error) throw error;
+      if (data && data.length > 0) {
+        setBoosts(prev => prev.map(b => b.id === boost.id ? data[0] : b));
+      }
+    } catch (err: any) {
+      setError('Erreur lors de la mise à jour du boost.');
+    }
+  };
+
+  const deleteBoost = async (id: number) => {
+    setError(null);
+    try {
+      if (!supabase) return;
+      const { error } = await supabase
+        .from('boosts')
+        .delete()
+        .eq('id', id)
+        .eq('user_id', user.id);
+      if (error) throw error;
+      setBoosts(prev => prev.filter(b => b.id !== id));
+    } catch (err: any) {
+      setError('Erreur lors de la suppression du boost.');
+    }
+  };
+
   if (!isLoaded && !authLoading) return <div>Chargement des ventes...</div>;
   if (error) return <div style={{ color: 'red', padding: 16 }}>{error}</div>;
 
@@ -407,6 +737,8 @@ export const DataProvider = ({ children }: { children: React.ReactNode }) => {
       addArticle,
       updateArticle,
       deleteArticle,
+      deleteAllArticles,
+      forceRefreshData,
       ventes,
       addVente,
       updateVente,
@@ -415,6 +747,10 @@ export const DataProvider = ({ children }: { children: React.ReactNode }) => {
       updateStock,
       addStockItem,
       deleteStockItem,
+      boosts,
+      addBoost,
+      updateBoost,
+      deleteBoost,
       stats,
       vendreArticle,
       ajouterAuStock

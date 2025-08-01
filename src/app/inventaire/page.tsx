@@ -6,11 +6,12 @@ import { Input } from "@/components/ui/input";
 import { ArticleFormModal, Article } from "@/components/ArticleFormModal";
 import { useData } from "@/contexts/DataContext";
 import { useStats } from "@/contexts/StatsContext";
-import { Plus, Search, Filter, Eye, Heart, Edit, Archive, Trash2, TrendingUp, Package, DollarSign, Tag, ChevronDown, X, Check, AlertCircle, Clock, Truck, Users, BarChart3, Sparkles } from "lucide-react";
+import { Plus, Search, Filter, Eye, Heart, Edit, Archive, Trash2, TrendingUp, Package, DollarSign, Tag, ChevronDown, X, Check, AlertCircle, Clock, Truck, Users, BarChart3, Sparkles, RefreshCw } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
+import { VintedUniversalParser } from "@/lib/VintedUniversalParser";
 
 export default function InventairePage() {
-  const { articles, addArticle, updateArticle, deleteArticle } = useData();
+  const { articles, ventes, stock, boosts, addArticle, updateArticle, deleteArticle, deleteAllArticles, forceRefreshData, updateVente } = useData();
   const stats = useStats();
   const [modalOuvert, setModalOuvert] = useState(false);
   const [articleEnEdition, setArticleEnEdition] = useState<Article | null>(null);
@@ -21,6 +22,7 @@ export default function InventairePage() {
   const [elementsParPage, setElementsParPage] = useState(10);
   const [filtresOuverts, setFiltresOuverts] = useState(false);
   const [messageSucces, setMessageSucces] = useState("");
+  const [showClearConfirm, setShowClearConfirm] = useState(false);
 
   // Filtrage des articles
   const articlesFiltres = useMemo(() => {
@@ -84,6 +86,105 @@ export default function InventairePage() {
     setTimeout(() => setMessageSucces(""), 3000);
   };
 
+  const viderInventaire = async () => {
+    try {
+      console.log('Début de viderInventaire...');
+      await deleteAllArticles();
+      console.log('deleteAllArticles terminé');
+      setMessageSucces("Toutes les données supprimées avec succès !");
+      setTimeout(() => setMessageSucces(""), 3000);
+      setShowClearConfirm(false);
+      console.log('Modal fermée');
+    } catch (err) {
+      console.error('Erreur dans viderInventaire:', err);
+      setMessageSucces("Erreur lors de la suppression des données");
+      setTimeout(() => setMessageSucces(""), 3000);
+    }
+  };
+
+    const mettreAJourCategories = async () => {
+    try {
+      console.log("Début de la mise à jour des catégories...");
+      let articlesModifies = 0;
+      let ventesModifiees = 0;
+      
+      // Mettre à jour les catégories des articles existants
+      for (const article of articles) {
+        console.log(`Article: ${article.nom}, Catégorie actuelle: ${article.categorie}`);
+        
+        // Toujours mettre à jour la catégorie basée sur le nom
+        const nouvelleCategorie = VintedUniversalParser.extractCategoryFromName(article.nom);
+        console.log(`Nouvelle catégorie détectée: ${nouvelleCategorie}`);
+        
+        // Toujours mettre à jour si la catégorie détectée est différente
+        if (nouvelleCategorie !== article.categorie) {
+          console.log(`Mise à jour de "${article.nom}" : ${article.categorie} → ${nouvelleCategorie}`);
+          await updateArticle({
+            ...article,
+            categorie: nouvelleCategorie
+          });
+          articlesModifies++;
+        } else {
+          console.log(`Pas de changement pour "${article.nom}" (${article.categorie})`);
+        }
+      }
+      
+      // Mettre à jour les catégories des ventes correspondantes
+      console.log(`\n=== DEBUG CORRESPONDANCE ===`);
+      console.log(`Articles disponibles:`, articles.map(a => a.nom));
+      console.log(`Ventes disponibles:`, ventes.map(v => v.article));
+      
+      for (const vente of ventes) {
+        console.log(`\nVente: "${vente.article}", Catégorie actuelle: ${vente.categorie}`);
+        
+                 // Chercher l'article correspondant avec une correspondance plus flexible
+         const articleCorrespondant = articles.find(a => {
+           // Correspondance exacte
+           if (a.nom === vente.article) return true;
+           
+           // Correspondance partielle (mots clés)
+           const motsVente = vente.article.toLowerCase().split(' ');
+           const motsArticle = a.nom.toLowerCase().split(' ');
+           
+           // Si au moins 3 mots correspondent, on considère que c'est le même article
+           const motsCommuns = motsVente.filter(mot => motsArticle.includes(mot));
+           return motsCommuns.length >= 3;
+         });
+         console.log(`Article correspondant trouvé:`, articleCorrespondant ? `"${articleCorrespondant.nom}"` : "AUCUN");
+        
+        if (articleCorrespondant) {
+          const nouvelleCategorie = VintedUniversalParser.extractCategoryFromName(articleCorrespondant.nom);
+          console.log(`Nouvelle catégorie détectée: ${nouvelleCategorie}`);
+          
+          if (nouvelleCategorie !== vente.categorie) {
+            console.log(`✅ Mise à jour de la vente "${vente.article}" : ${vente.categorie} → ${nouvelleCategorie}`);
+            await updateVente({
+              ...vente,
+              categorie: nouvelleCategorie
+            });
+            ventesModifiees++;
+          } else {
+            console.log(`⚠️ Pas de changement pour la vente "${vente.article}" (${vente.categorie})`);
+          }
+        } else {
+          console.log(`❌ AUCUN ARTICLE CORRESPONDANT TROUVÉ pour "${vente.article}"`);
+        }
+      }
+      
+      console.log(`Mise à jour terminée. ${articlesModifies} articles et ${ventesModifiees} ventes modifiés.`);
+      setMessageSucces(`Catégories mises à jour avec succès ! ${articlesModifies} articles et ${ventesModifiees} ventes modifiés.`);
+      setTimeout(() => setMessageSucces(""), 3000);
+      
+      // Forcer la synchronisation complète de l'application
+      console.log('Synchronisation complète de l\'application...');
+      await forceRefreshData();
+    } catch (err) {
+      console.error("Erreur lors de la mise à jour des catégories:", err);
+      setMessageSucces("Erreur lors de la mise à jour des catégories");
+      setTimeout(() => setMessageSucces(""), 3000);
+    }
+  };
+
   const ouvrirModal = (article?: Article) => {
     if (article) {
       setArticleEnEdition(article);
@@ -135,6 +236,36 @@ export default function InventairePage() {
                 <Plus className="w-4 h-4 group-hover:rotate-90 transition-transform duration-200" />
                 Ajouter un article
               </Button>
+                               <>
+                                     {articles.length > 0 && (
+                     <>
+                       <Button 
+                         onClick={mettreAJourCategories}
+                         variant="outline"
+                         className="flex items-center gap-2 bg-blue-500 hover:bg-blue-600 text-white shadow-lg hover:shadow-xl transition-all duration-200 hover:scale-105"
+                       >
+                         <Tag className="w-4 h-4" />
+                         Mettre à jour catégories
+                       </Button>
+                       <Button 
+                         onClick={forceRefreshData}
+                         variant="outline"
+                         className="flex items-center gap-2 bg-green-500 hover:bg-green-600 text-white shadow-lg hover:shadow-xl transition-all duration-200 hover:scale-105"
+                       >
+                         <RefreshCw className="w-4 h-4" />
+                         Synchroniser
+                       </Button>
+                     </>
+                   )}
+                  <Button 
+                    onClick={() => setShowClearConfirm(true)}
+                    variant="destructive"
+                    className="flex items-center gap-2 bg-red-500 hover:bg-red-600 text-white shadow-lg hover:shadow-xl transition-all duration-200 hover:scale-105"
+                  >
+                    <Trash2 className="w-4 h-4" />
+                    Vider toutes les données
+                  </Button>
+                </>
             </div>
           </div>
         </motion.div>
@@ -384,7 +515,7 @@ export default function InventairePage() {
                       <span>{article.likes}</span>
                     </div>
                     <div className="text-xs font-medium text-slate-600 group-hover:text-slate-700 transition-colors duration-200">
-                      {article.margePourcent}% marge
+                      {article.marge_pourcent}% marge
                     </div>
                   </div>
                 </div>
@@ -470,6 +601,37 @@ export default function InventairePage() {
             </motion.div>
           )}
         </AnimatePresence>
+
+                 {/* Modal de confirmation pour vider toutes les données */}
+         {showClearConfirm && (
+           <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+             <div className="bg-white rounded-lg p-6 max-w-md mx-4">
+               <h3 className="text-lg font-semibold mb-4">⚠️ ATTENTION - Suppression complète</h3>
+               <p className="text-gray-600 mb-6">
+                 Êtes-vous sûr de vouloir supprimer <strong>TOUTES</strong> vos données ?<br/><br/>
+                 • {articles.length} articles d'inventaire<br/>
+                 • {ventes?.length || 0} ventes<br/>
+                 • {stock?.length || 0} éléments de stock<br/>
+                 • {boosts?.length || 0} boosts<br/><br/>
+                 <strong>Cette action est irréversible et supprimera définitivement toutes vos données !</strong>
+               </p>
+               <div className="flex gap-3 justify-end">
+                 <Button
+                   variant="outline"
+                   onClick={() => setShowClearConfirm(false)}
+                 >
+                   Annuler
+                 </Button>
+                 <Button
+                   variant="destructive"
+                   onClick={viderInventaire}
+                 >
+                   Supprimer TOUT
+                 </Button>
+               </div>
+             </div>
+           </div>
+         )}
       </motion.div>
     </AnimatePresence>
   );
