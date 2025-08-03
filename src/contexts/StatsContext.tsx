@@ -8,6 +8,13 @@ export interface Stats {
   totalVentes: number;
   totalRevenus: number;
   totalArticles: number;
+  totalMarge: number;
+  articlesEnVente: number;
+  articlesVendus: number;
+  stockFaible: number;
+  stockRupture: number;
+  totalBoosts: number;
+  totalDepenseBoosts: number;
   stockCritique: number;
   isLoading?: boolean;
 }
@@ -17,6 +24,13 @@ export const defaultStats: Stats = {
   totalVentes: 0,
   totalRevenus: 0,
   totalArticles: 0,
+  totalMarge: 0,
+  articlesEnVente: 0,
+  articlesVendus: 0,
+  stockFaible: 0,
+  stockRupture: 0,
+  totalBoosts: 0,
+  totalDepenseBoosts: 0,
   stockCritique: 0,
   isLoading: true,
 };
@@ -32,6 +46,8 @@ export function StatsProvider({ children }: { children: ReactNode }) {
     addArticle: () => {},
     updateArticle: () => {},
     deleteArticle: () => {},
+    deleteAllArticles: () => {},
+    forceRefreshData: () => {},
     ventes: [],
     addVente: () => {},
     updateVente: () => {},
@@ -40,6 +56,10 @@ export function StatsProvider({ children }: { children: ReactNode }) {
     updateStock: () => {},
     addStockItem: () => {},
     deleteStockItem: () => {},
+    boosts: [],
+    addBoost: () => {},
+    updateBoost: () => {},
+    deleteBoost: () => {},
     stats: {
       totalArticles: 0,
       totalVentes: 0,
@@ -49,6 +69,8 @@ export function StatsProvider({ children }: { children: ReactNode }) {
       articlesVendus: 0,
       stockFaible: 0,
       stockRupture: 0,
+      totalBoosts: 0,
+      totalDepenseBoosts: 0,
     },
     vendreArticle: () => {},
     ajouterAuStock: () => {},
@@ -67,12 +89,25 @@ export function StatsProvider({ children }: { children: ReactNode }) {
     }
     const totalVentes = ventes.length;
     const totalRevenus = ventes.reduce((sum: number, vente: any) => sum + (vente.prix || 0), 0);
+    const totalMarge = ventes.reduce((sum: number, vente: any) => sum + (vente.marge || 0), 0);
     const totalArticles = articles.length;
+    const articlesEnVente = articles.filter((article: any) => article.statut === 'En vente').length;
+    const articlesVendus = articles.filter((article: any) => article.statut === 'Vendu').length;
+    const stockFaible = stock.filter((item: any) => item.statut === 'Faible').length;
+    const stockRupture = stock.filter((item: any) => item.statut === 'Rupture').length;
     const stockCritique = stock.filter((item: any) => item.statut === 'Faible' || item.statut === 'Rupture').length;
+    
     setStats({
       totalVentes,
       totalRevenus,
       totalArticles,
+      totalMarge,
+      articlesEnVente,
+      articlesVendus,
+      stockFaible,
+      stockRupture,
+      totalBoosts: 0, // À implémenter quand les boosts seront disponibles
+      totalDepenseBoosts: 0, // À implémenter quand les boosts seront disponibles
       stockCritique,
       isLoading: false,
     });

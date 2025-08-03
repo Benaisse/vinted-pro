@@ -12,12 +12,12 @@ export function SupabaseTest() {
     setLoading(testName);
     try {
       const result = await testFn();
-      setTestResults(prev => ({
+      setTestResults((prev: any) => ({
         ...prev,
         [testName]: { success: true, data: result }
       }));
-    } catch (error) {
-      setTestResults(prev => ({
+    } catch (error: any) {
+      setTestResults((prev: any) => ({
         ...prev,
         [testName]: { success: false, error: error.message }
       }));
@@ -27,12 +27,14 @@ export function SupabaseTest() {
   };
 
   const testConnection = async () => {
+    if (!supabase) throw new Error('Supabase client non initialisé');
     const { data, error } = await supabase.from('articles').select('count').limit(1);
     if (error) throw error;
     return data;
   };
 
   const testInsert = async () => {
+    if (!supabase) throw new Error('Supabase client non initialisé');
     const { data, error } = await supabase
       .from('articles')
       .insert([{
@@ -49,6 +51,7 @@ export function SupabaseTest() {
   };
 
   const testUpdate = async () => {
+    if (!supabase) throw new Error('Supabase client non initialisé');
     const { data, error } = await supabase
       .from('articles')
       .update({ titre: 'Test Article Updated' })
@@ -59,6 +62,7 @@ export function SupabaseTest() {
   };
 
   const testDelete = async () => {
+    if (!supabase) throw new Error('Supabase client non initialisé');
     const { data, error } = await supabase
       .from('articles')
       .delete()
@@ -69,6 +73,7 @@ export function SupabaseTest() {
   };
 
   const testStats = async () => {
+    if (!supabase) throw new Error('Supabase client non initialisé');
     const { count, error } = await supabase
       .from('articles')
       .select('*', { count: 'exact', head: true });

@@ -15,6 +15,13 @@ const nextConfig = {
   images: {
     domains: [],
   },
+  // Exclure les dossiers de backup de la compilation
+  webpack: (config, { buildId, dev, isServer, defaultLoaders, webpack }) => {
+    config.watchOptions = {
+      ignored: /node_modules/,
+    };
+    return config;
+  },
 }
 
 const withBundleAnalyzer = require('@next/bundle-analyzer')({

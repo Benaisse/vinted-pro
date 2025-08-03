@@ -1,0 +1,13 @@
+# Exclure les dossiers de backup
+vinted-pro-backup-*/
+*.backup
+backup_*
+
+# Exclure les fichiers de développement
+.env.local
+.env.development
+.env.test
+
+# Exclure les fichiers de cache
+.next
+node_modules 

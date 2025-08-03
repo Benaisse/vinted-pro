@@ -1,0 +1,12 @@
+# Exclure les dossiers de backup
+vinted-pro-backup-*/
+*.backup
+backup_*
+
+# Exclure les fichiers de build
+.next/
+out/
+dist/
+
+# Exclure les dépendances
+node_modules/ 
