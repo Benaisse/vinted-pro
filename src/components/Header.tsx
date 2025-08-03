@@ -310,9 +310,6 @@ export function Header({
     console.log('Déconnexion cliquée');
     await signOut();
     router.push('/login');
-    setTimeout(() => {
-      window.location.reload();
-    }, 200);
   }, [signOut, router]);
 
   // Fonction utilitaire pour le nom affiché
@@ -594,12 +591,6 @@ export function Header({
               </div>
             </DropdownMenuLabel>
             <DropdownMenuSeparator />
-            <DropdownMenuItem 
-              onClick={() => router.push('/profil')}
-              className="hover:bg-purple-50"
-            >
-              Mon profil
-            </DropdownMenuItem>
             <DropdownMenuItem 
               onClick={handleLogout}
               className="hover:bg-red-50 text-red-600"

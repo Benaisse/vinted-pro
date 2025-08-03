@@ -17,7 +17,7 @@ export default function RegisterPage() {
   const [success, setSuccess] = useState(false);
 
   React.useEffect(() => {
-    if (user) router.replace("/dashboard");
+    if (user) router.replace("/inventaire");
   }, [user, router]);
 
   const validateEmail = (value: string) =>

@@ -18,7 +18,7 @@ export default function LoginPage() {
   const [googleLoading, setGoogleLoading] = useState(false);
 
   React.useEffect(() => {
-    if (user) router.replace("/");
+    if (user) router.replace("/inventaire");
   }, [user, router]);
 
   const validateEmail = (value: string) =>
@@ -35,7 +35,7 @@ export default function LoginPage() {
     setIsSubmitting(true);
     try {
       await signIn(email, password);
-      router.replace("/");
+      router.replace("/inventaire");
     } catch (err: any) {
       setError(err.message || "Erreur de connexion");
     } finally {
